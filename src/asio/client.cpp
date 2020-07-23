@@ -3,9 +3,6 @@
 #endif
 #include <cstdint> // uint16_t
 #include <string>
-#include <filesystem>
-#include <filesystem>
-#include <filesystem>
 #define BOOST_ASIO_NO_DEPRECATED 1
 #include <boost/asio.hpp>
 #include <boost/system/error_code.hpp>
@@ -18,6 +15,7 @@
 #include "log.hpp"
 #include "option.h"
 #include "client.h"
+#include "compiler_detection.h"
 
 void on_read(
     boost::system::error_code error,
@@ -109,11 +107,11 @@ void on_connect(
         });
 }
 
-std::filesystem::path execution_path()
+filesystem::path execution_path()
 {
     char fileName[MAX_PATH] = { '\0' };
     GetModuleFileNameA(NULL, fileName, sizeof(fileName));
-    std::filesystem::path path(fileName);
+    filesystem::path path(fileName);
     return path.parent_path();
 }
 
@@ -123,7 +121,7 @@ public:
     boost::optional<std::string> address;
     boost::optional<uint16_t> port;
 
-    void parse(int argc, char* argv[], const std::filesystem::path& path) override
+    void parse(int argc, char* argv[], const filesystem::path& path) CXX_OVERRIDE
     {
         boost::program_options::options_description options_description;
         options_description.add_options()
@@ -148,7 +146,7 @@ public:
 
         if (!port || !address)
         {
-            if (std::filesystem::exists(path))
+            if (filesystem::exists(path))
             {
                 boost::property_tree::ptree ptree;
                 boost::property_tree::read_xml(path.string(), ptree);
@@ -165,7 +163,7 @@ int main(int argc, char* argv[])
     BLOG(info, "execution path: %1%") % path.string();
 
     Option option;
-    option.parse(argc, argv, path.parent_path() / "asio.xml");
+    option.parse(argc, argv, path.parent_path().parent_path() / "asio.xml");
 
     if (!option.port)
     {

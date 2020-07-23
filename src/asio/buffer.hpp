@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <cstddef> // std::size_t
+#define BOOST_ASIO_NO_DEPRECATED 1
 #include <boost/asio/buffer.hpp>
 #ifndef NOMINMAX
 #define NOMINMAX
