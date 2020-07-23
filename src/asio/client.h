@@ -1,7 +1,7 @@
 #pragma once
 #define BOOST_ASIO_NO_DEPRECATED 1
-#include <cstddef> // size_t
-#include <memory> // shared_ptr make_shared
+#include <cstddef> // std::size_t
+#include <memory> // std::shared_ptr std::make_shared
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/system/error_code.hpp>
 #include "buffer.hpp"

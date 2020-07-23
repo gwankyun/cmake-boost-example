@@ -1,7 +1,7 @@
 #ifndef BOOST_ALL_NO_LIB
 #define BOOST_ALL_NO_LIB
 #endif
-#include <cstdint> // uint16_t
+#include <cstdint> // std::uint16_t std::uint32_t
 #include <string>
 #include <boost/algorithm/string.hpp>
 #include <boost/property_tree/ptree.hpp>
@@ -12,6 +12,7 @@
 #include "log.hpp"
 #include "option.h"
 #include "compiler_detection.h"
+#include "data.h"
 
 void on_write(
     boost::system::error_code error,
@@ -26,7 +27,7 @@ void on_write(
         BLOG(debug, "close %1%:%2%") % remote_endpoint.address().to_string() % remote_endpoint.port();
         return;
     }
-    BLOG(debug, "bytes_transferred: %1%") % bytes_transferred;
+    //BLOG(debug, "bytes_transferred: %1%") % bytes_transferred;
     buffer->offset() += bytes_transferred;
     if (buffer->offset() < buffer->size())
     {
@@ -64,10 +65,19 @@ void on_read(
         BLOG(debug, "close %1%:%2%") % remote_endpoint.address().to_string() % remote_endpoint.port();
         return;
     }
-    if (boost::ends_with(buffer->data(), "."))
+
+    buffer->offset() += bytes_transferred;
+
+    Data data;
+
+    if (unpack(*buffer, data))
     {
-        BLOG(debug, "async_read_some: %1%") % buffer->data();
-        auto writeBuffer = std::make_shared<Buffer>(std::string("server."));
+        BLOG(debug, "async_read_some: %1%") % data.message;
+        auto writeBuffer = std::make_shared<Buffer>();
+        Data writeData;
+        writeData.message = "server.";
+        pack(writeData, *writeBuffer);
+
         socket->async_write_some(
             writeBuffer->const_buffer(2),
             [socket, writeBuffer](boost::system::error_code error, std::size_t bytes_transferred)
@@ -77,7 +87,6 @@ void on_read(
     }
     else
     {
-        buffer->offset() += bytes_transferred;
         socket->async_read_some(
             buffer->mutable_buffer(),
             [socket, buffer](boost::system::error_code error, std::size_t bytes_transferred)

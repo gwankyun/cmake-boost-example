@@ -1,7 +1,7 @@
 #ifndef BOOST_ALL_NO_LIB
 #define BOOST_ALL_NO_LIB
 #endif
-#include <cstdint> // uint16_t
+#include <cstdint> // std::uint16_t std::uint32_t
 #include <string>
 #define BOOST_ASIO_NO_DEPRECATED 1
 #include <boost/asio.hpp>
@@ -16,6 +16,7 @@
 #include "option.h"
 #include "client.h"
 #include "compiler_detection.h"
+#include "data.h"
 
 void on_read(
     boost::system::error_code error,
@@ -30,14 +31,17 @@ void on_read(
         BLOG(debug, "close %1%:%2%") % remote_endpoint.address().to_string() % remote_endpoint.port();
         return;
     }
-    if (boost::ends_with(buffer->data(), "."))
+
+    buffer->offset() += bytes_transferred;
+
+    Data data;
+
+    if (unpack(*buffer, data))
     {
-        BLOG(debug, "async_read_some: %1%") % buffer->data();
+        BLOG(debug, "async_read_some: %1%") % data.message;
     }
     else
     {
-        BLOG(debug, "async_read_some: %1%") % buffer->data();
-        buffer->offset() += bytes_transferred;
         socket->async_read_some(
             buffer->mutable_buffer(),
             [socket, buffer](boost::system::error_code error, std::size_t bytes_transferred)
@@ -60,7 +64,7 @@ void on_write(
         BLOG(debug, "close %1%:%2%") % remote_endpoint.address().to_string() % remote_endpoint.port();
         return;
     }
-    BLOG(debug, "bytes_transferred: %1%") % bytes_transferred;
+    //BLOG(debug, "bytes_transferred: %1%") % bytes_transferred;
     buffer->offset() += bytes_transferred;
     if (buffer->offset() < buffer->size())
     {
@@ -97,7 +101,10 @@ void on_connect(
     auto remote_endpoint = socket->remote_endpoint();
     BLOG(debug, "connect %1%:%2%") % remote_endpoint.address().to_string() % remote_endpoint.port();
 
-    auto buffer = std::make_shared<Buffer>(std::string("client."));
+    auto buffer = std::make_shared<Buffer>();
+    Data data;
+    data.message = "client.";
+    pack(data, *buffer);
 
     socket->async_write_some(
         buffer->const_buffer(2),

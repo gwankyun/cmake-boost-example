@@ -79,7 +79,7 @@ endif()
 cmake_print_variables(Boost_USE_STATIC_LIBS)
 cmake_print_variables(Boost_USE_STATIC_RUNTIME)
 
-find_package(Boost 1.73.0 REQUIRED COMPONENTS date_time filesystem log program_options)
+find_package(Boost 1.73.0 REQUIRED COMPONENTS date_time filesystem log program_options serialization)
 
 if(Boost_FOUND)
   cmake_print_variables(Boost_INCLUDE_DIRS)
@@ -101,12 +101,15 @@ add_executable(${main})
 # 源文件
 target_sources(${main} PRIVATE src/main.cpp)
 
-set(msvc_options
-    "$<$<AND:$<CONFIG:Debug>,$<CXX_COMPILER_ID:MSVC>>:${runtime};/Od;/Ob0>;"
-    "$<$<AND:$<CONFIG:Release>,$<CXX_COMPILER_ID:MSVC>>:${runtime};/O2;/Ob2>;")
+set(compiler_options
+  "$<$<AND:$<CONFIG:Debug>,$<CXX_COMPILER_ID:MSVC>>:${runtime};/Od;/Ob0>;"
+  "$<$<AND:$<CONFIG:Release>,$<CXX_COMPILER_ID:MSVC>>:${runtime};/O2;/Ob2>;")
+
+set(platform_definitions
+  "$<$<PLATFORM_ID:Windows>:_WIN32_WINNT=${_WIN32_WINNT}>")
 
 # 編譯器選項
-target_compile_options(${main} PUBLIC ${msvc_options})
+target_compile_options(${main} PUBLIC ${compiler_options})
 
 # 庫目錄
 target_link_directories(${main} PRIVATE ${Boost_LIBRARY_DIRS})
@@ -120,13 +123,22 @@ target_include_directories(${main}
     include ${Boost_INCLUDE_DIRS})
 
 # Boost.Test
-add_executable(test)
-target_sources(test PRIVATE src/test/test1.cpp src/test/test2.cpp)
-target_include_directories(test
+set(test test)
+add_executable(${test})
+target_sources(${test} PRIVATE
+  src/test/test1.cpp
+  src/test/test2.cpp
+  src/asio/test.cpp)
+target_compile_options(${test} PUBLIC ${compiler_options})
+target_link_libraries(${test} Boost::serialization)
+target_include_directories(${test}
   PRIVATE
     include ${Boost_INCLUDE_DIRS})
+target_compile_definitions(${test}
+  PRIVATE ${platform_definitions})
 
 # Boost.Asio
+set(asio asio)
 
 if(USE_CXX_STD_17)
   set(cxx_std cxx_std_17)
@@ -134,39 +146,49 @@ else()
   set(cxx_std cxx_std_11)
 endif()
 
-set(asio_source
-    src/asio/buffer.hpp
-    src/asio/log.hpp
-    src/asio/option.h)
+set(asio_sources
+  src/asio/buffer.hpp
+  src/asio/log.hpp
+  src/asio/option.h
+)
+
+set(asio_include_directories include ${Boost_INCLUDE_DIRS})
+
+set(data data)
+add_library(${data})
+set_target_properties(${data} PROPERTIES FOLDER ${asio})
+target_sources(${data} PRIVATE
+  src/asio/data.cpp
+  src/asio/data.h)
+target_link_libraries(${data} Boost::serialization)
+target_compile_options(${data} PRIVATE ${compiler_options})
+target_compile_features(${data} PRIVATE ${cxx_std})
+target_compile_definitions(${data} PRIVATE ${platform_definitions})
+
+set(asio_libraries Boost::log Boost::program_options ${data})
 
 set(server server)
 add_executable(${server})
-set_target_properties(${server} PROPERTIES FOLDER asio)
+set_target_properties(${server} PROPERTIES FOLDER ${asio})
 target_sources(${server} PRIVATE
-    src/asio/server.cpp
-    src/asio/server.h
-    ${asio_source})
-target_include_directories(${server}
-  PRIVATE
-    include ${Boost_INCLUDE_DIRS})
-target_link_libraries(${server} Boost::log Boost::program_options)
-target_compile_options(${server} PUBLIC ${msvc_options})
-target_compile_features(${server} PUBLIC ${cxx_std})
-target_compile_definitions(${server}
-    PRIVATE "$<$<PLATFORM_ID:Windows>:_WIN32_WINNT=${_WIN32_WINNT}>")
+  src/asio/server.cpp
+  src/asio/server.h
+  ${asio_sources})
+target_include_directories(${server} PRIVATE ${asio_include_directories})
+target_link_libraries(${server} ${asio_libraries})
+target_compile_options(${server} PRIVATE ${compiler_options})
+target_compile_features(${server} PRIVATE ${cxx_std})
+target_compile_definitions(${server} PRIVATE ${platform_definitions})
 
 set(client client)
 add_executable(${client})
-set_target_properties(${client} PROPERTIES FOLDER asio)
+set_target_properties(${client} PROPERTIES FOLDER ${asio})
 target_sources(${client} PRIVATE
-    src/asio/client.cpp
-    src/asio/client.h
-    ${asio_source})
-target_include_directories(${client}
-  PRIVATE
-    include ${Boost_INCLUDE_DIRS})
-target_link_libraries(${client} Boost::log Boost::program_options)
-target_compile_options(${client} PUBLIC ${msvc_options})
-target_compile_features(${client} PUBLIC ${cxx_std})
-target_compile_definitions(${client}
-    PRIVATE "$<$<PLATFORM_ID:Windows>:_WIN32_WINNT=${_WIN32_WINNT}>")
+  src/asio/client.cpp
+  src/asio/client.h
+  ${asio_sources})
+target_include_directories(${client} PRIVATE ${asio_include_directories})
+target_link_libraries(${client} ${asio_libraries})
+target_compile_options(${client} PRIVATE ${compiler_options})
+target_compile_features(${client} PRIVATE ${cxx_std})
+target_compile_definitions(${client} PRIVATE ${platform_definitions})

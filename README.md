@@ -11,10 +11,11 @@ Boost CMake使用例子
 
 衹用`Boost`及標準庫，用到的`Boost`庫為：
 
-- `Log`
-- `Program options`
-- `Asio`
-- `Property Tree`
-- `Test`
-- `String Algo`
-- `System`
+- `Log` 日誌
+- `Program options` 解析命令行參數
+- `Asio` 網絡
+- `Property Tree` 解析`XML`配置文件
+- `Test` 單元測試
+- `String Algo` 字符串算法
+- `System` 系統錯誤碼
+- `Serialization` 序列化
