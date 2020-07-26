@@ -149,7 +149,7 @@ endif()
 set(asio_sources
   src/asio/buffer.hpp
   src/asio/log.hpp
-  src/asio/option.h
+  src/asio/option.hpp
 )
 
 set(asio_include_directories include ${Boost_INCLUDE_DIRS})
@@ -160,7 +160,7 @@ set_target_properties(${data} PROPERTIES FOLDER ${asio})
 target_sources(${data} PRIVATE
   src/asio/data.cpp
   src/asio/data.h)
-target_link_libraries(${data} Boost::serialization)
+target_link_libraries(${data} Boost::serialization bcrypt)
 target_compile_options(${data} PRIVATE ${compiler_options})
 target_compile_features(${data} PRIVATE ${cxx_std})
 target_compile_definitions(${data} PRIVATE ${platform_definitions})
@@ -192,3 +192,16 @@ target_link_libraries(${client} ${asio_libraries})
 target_compile_options(${client} PRIVATE ${compiler_options})
 target_compile_features(${client} PRIVATE ${cxx_std})
 target_compile_definitions(${client} PRIVATE ${platform_definitions})
+
+## 協程
+set(server_stackless_coroutine server_stackless_coroutine)
+add_executable(${server_stackless_coroutine})
+set_target_properties(${server_stackless_coroutine} PROPERTIES FOLDER ${asio})
+target_sources(${server_stackless_coroutine} PRIVATE
+  src/asio/server_stackless_coroutine.cpp
+  ${asio_sources})
+target_include_directories(${server_stackless_coroutine} PRIVATE ${asio_include_directories})
+target_link_libraries(${server_stackless_coroutine} ${asio_libraries})
+target_compile_options(${server_stackless_coroutine} PRIVATE ${compiler_options})
+target_compile_features(${server_stackless_coroutine} PRIVATE ${cxx_std})
+target_compile_definitions(${server_stackless_coroutine} PRIVATE ${platform_definitions})

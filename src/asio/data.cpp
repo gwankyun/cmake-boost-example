@@ -1,9 +1,26 @@
+#ifndef BOOST_ALL_NO_LIB
+#define BOOST_ALL_NO_LIB
+#endif
 #include "data.h"
 #include <sstream>
 #include <string>
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/archive/text_iarchive.hpp>
+#include <boost/uuid/uuid.hpp>
+#include <boost/uuid/uuid_io.hpp>
+#include <boost/uuid/uuid_generators.hpp>
 #include "buffer.hpp"
+
+Data::Data()
+    : uuid(boost::uuids::to_string(boost::uuids::random_generator()()))
+{
+
+}
+
+Data::~Data()
+{
+
+}
 
 void pack(const Data& data, std::string& buffer)
 {

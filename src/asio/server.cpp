@@ -10,7 +10,7 @@
 #include <boost/program_options.hpp>
 #include "server.h"
 #include "log.hpp"
-#include "option.h"
+#include "option.hpp"
 #include "compiler_detection.h"
 #include "data.h"
 
@@ -72,7 +72,8 @@ void on_read(
 
     if (unpack(*buffer, data))
     {
-        BLOG(debug, "async_read_some: %1%") % data.message;
+        BLOG(info, "uuid: %1%") % data.uuid;
+        BLOG(info, "message: %1%") % data.message;
         auto writeBuffer = std::make_shared<Buffer>();
         Data writeData;
         writeData.message = "server.";
@@ -134,40 +135,6 @@ filesystem::path execution_path()
     filesystem::path path(fileName);
     return path.parent_path();
 }
-
-class Option : public OptionBase
-{
-public:
-    boost::optional<uint16_t> port;
-
-    void parse(int argc, char* argv[], const filesystem::path& path) CXX_OVERRIDE
-    {
-        boost::program_options::options_description options_description;
-        options_description.add_options()
-            ("port", boost::program_options::value<uint16_t>())
-            ;
-
-        boost::program_options::variables_map variables_map;
-        boost::program_options::store(
-            boost::program_options::parse_command_line(argc, argv, options_description),
-            variables_map);
-
-        if (variables_map.count("port"))
-        {
-            port = boost::make_optional(variables_map["port"].as<uint16_t>());
-        }
-
-        if (!port)
-        {
-            if (filesystem::exists(path))
-            {
-                boost::property_tree::ptree ptree;
-                boost::property_tree::read_xml(path.string(), ptree);
-                port = ptree.get_optional<uint16_t>("option.port");
-            }
-        }
-    }
-};
 
 int main(int argc, char* argv[])
 {

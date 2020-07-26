@@ -3,7 +3,10 @@
 
 struct Data
 {
+    Data();
+    ~Data();
     std::string message;
+    std::string uuid;
 };
 
 namespace boost
@@ -15,6 +18,7 @@ namespace boost
         {
             (void)version;
             ar& data.message;
+            ar& data.uuid;
         }
     }
 }

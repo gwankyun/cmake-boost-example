@@ -19,3 +19,4 @@ Boost CMake使用例子
 - `String Algo` 字符串算法
 - `System` 系統錯誤碼
 - `Serialization` 序列化
+- `Uuid` 通用統一標識碼
