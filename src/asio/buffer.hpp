@@ -80,24 +80,28 @@ public:
         return offset_;
     }
 
-    boost::asio::mutable_buffer mutable_buffer()
+    boost::asio::mutable_buffer read()
     {
         return boost::asio::buffer(data() + offset(), size() - offset());
     }
 
-    boost::asio::const_buffer const_buffer()
+    boost::asio::const_buffer write()
     {
         return boost::asio::buffer(data() + offset(), size() - offset());
     }
 
-    boost::asio::mutable_buffer mutable_buffer(std::size_t count)
+    // ¿Õég²»×ã•r•þ×Ô„ÓÍØÕ¹
+    boost::asio::mutable_buffer read(std::size_t count)
     {
-        return boost::asio::buffer(
-            data() + offset(),
-            std::min(size() - offset(), count));
+        std::size_t needSize = count - (size() - offset());
+        if (needSize > 0)
+        {
+            vec_.resize(size() + needSize);
+        }
+        return boost::asio::buffer(data() + offset(), count);
     }
 
-    boost::asio::const_buffer const_buffer(std::size_t count)
+    boost::asio::const_buffer write(std::size_t count)
     {
         return boost::asio::buffer(
             data() + offset(),

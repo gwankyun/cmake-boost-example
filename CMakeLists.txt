@@ -205,3 +205,15 @@ target_link_libraries(${server_stackless_coroutine} ${asio_libraries})
 target_compile_options(${server_stackless_coroutine} PRIVATE ${compiler_options})
 target_compile_features(${server_stackless_coroutine} PRIVATE ${cxx_std})
 target_compile_definitions(${server_stackless_coroutine} PRIVATE ${platform_definitions})
+
+set(client_stackless_coroutine client_stackless_coroutine)
+add_executable(${client_stackless_coroutine})
+set_target_properties(${client_stackless_coroutine} PROPERTIES FOLDER ${asio})
+target_sources(${client_stackless_coroutine} PRIVATE
+  src/asio/client_stackless_coroutine.cpp
+  ${asio_sources})
+target_include_directories(${client_stackless_coroutine} PRIVATE ${asio_include_directories})
+target_link_libraries(${client_stackless_coroutine} ${asio_libraries})
+target_compile_options(${client_stackless_coroutine} PRIVATE ${compiler_options})
+target_compile_features(${client_stackless_coroutine} PRIVATE ${cxx_std})
+target_compile_definitions(${client_stackless_coroutine} PRIVATE ${platform_definitions})

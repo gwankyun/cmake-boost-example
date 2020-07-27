@@ -20,3 +20,10 @@ Boost CMake使用例子
 - `System` 系統錯誤碼
 - `Serialization` 序列化
 - `Uuid` 通用統一標識碼
+
+## Asio
+
+- `server` 異步回調服務端
+- `client` 異步回調客戶端
+- `server_stackless_coroutine`  無棧協程異步服務端
+- `client_stackless_coroutine` 無棧協程異步客戶端

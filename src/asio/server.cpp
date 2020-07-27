@@ -32,7 +32,7 @@ void on_write(
     if (buffer->offset() < buffer->size())
     {
         socket->async_write_some(
-            buffer->const_buffer(2),
+            buffer->write(2),
             [socket, buffer](boost::system::error_code error, std::size_t bytes_transferred)
             {
                 on_write(error, bytes_transferred, socket, buffer);
@@ -43,7 +43,7 @@ void on_write(
         BLOG(debug, "async_write_some finished");
         auto readBuffer = std::make_shared<Buffer>(1024);
         socket->async_read_some(
-            buffer->mutable_buffer(),
+            buffer->read(),
             [socket, readBuffer](boost::system::error_code error,
                 std::size_t bytes_transferred)
             {
@@ -80,7 +80,7 @@ void on_read(
         pack(writeData, *writeBuffer);
 
         socket->async_write_some(
-            writeBuffer->const_buffer(2),
+            writeBuffer->write(2),
             [socket, writeBuffer](boost::system::error_code error, std::size_t bytes_transferred)
             {
                 on_write(error, bytes_transferred, socket, writeBuffer);
@@ -89,7 +89,7 @@ void on_read(
     else
     {
         socket->async_read_some(
-            buffer->mutable_buffer(),
+            buffer->read(),
             [socket, buffer](boost::system::error_code error, std::size_t bytes_transferred)
             {
                 on_read(error, bytes_transferred, socket, buffer);
@@ -114,7 +114,7 @@ void on_accept(
     auto buffer = std::make_shared<Buffer>(1024);
 
     socket->async_read_some(
-        buffer->mutable_buffer(),
+        buffer->read(),
         [socket, buffer](boost::system::error_code error, std::size_t bytes_transferred)
         {
             on_read(error, bytes_transferred, socket, buffer);
