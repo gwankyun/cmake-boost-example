@@ -21,7 +21,7 @@ class Server
 {
 public:
     explicit Server(
-        std::shared_ptr<boost::asio::ip::tcp::acceptor> acceptor_,
+        boost::asio::ip::tcp::acceptor& acceptor_,
         std::shared_ptr<boost::asio::ip::tcp::socket> socket_
     )
         : acceptor(acceptor_), socket(socket_)
@@ -32,27 +32,27 @@ public:
     {
     }
 
-    void operator()(boost::system::error_code ec = boost::system::error_code(), std::size_t length = 0);
+    void operator()(boost::system::error_code error = boost::system::error_code(), std::size_t bytes_transferred = 0);
 
 private:
-    std::shared_ptr<boost::asio::ip::tcp::acceptor> acceptor;
+    boost::asio::ip::tcp::acceptor& acceptor;
     std::shared_ptr<boost::asio::ip::tcp::socket> socket;
     std::shared_ptr<Buffer> buffer;
     std::shared_ptr<Data> data;
     boost::asio::coroutine coro;
 };
 
-void Server::operator()(boost::system::error_code ec, std::size_t length)
+void Server::operator()(boost::system::error_code error, std::size_t bytes_transferred)
 {
-    if (!ec)
+    if (!error)
     {
         reenter(coro)
         {
             // async_accept
             do
             {
-                socket.reset(new boost::asio::ip::tcp::socket(acceptor->get_executor()));
-                yield acceptor->async_accept(*socket, *this);
+                socket.reset(new boost::asio::ip::tcp::socket(acceptor.get_executor()));
+                yield acceptor.async_accept(*socket, *this);
                 fork Server(*this)();
             } while (coro.is_parent());
 
@@ -62,7 +62,7 @@ void Server::operator()(boost::system::error_code ec, std::size_t length)
             do
             {
                 yield socket->async_read_some(buffer->read(), *this);
-                buffer->offset() += length;
+                buffer->offset() += bytes_transferred;
             } while (!unpack(*buffer, *data));
             BLOG(info, "uuid: %1%") % data->uuid;
             BLOG(info, "message: %1%") % data->message;
@@ -75,7 +75,7 @@ void Server::operator()(boost::system::error_code ec, std::size_t length)
             do
             {
                 yield socket->async_write_some(buffer->write(2), *this);
-                buffer->offset() += length;
+                buffer->offset() += bytes_transferred;
             } while (buffer->offset() < buffer->size());
             BLOG(debug, "async_write_some finished");
 
@@ -84,15 +84,15 @@ void Server::operator()(boost::system::error_code ec, std::size_t length)
             do
             {
                 yield socket->async_read_some(buffer->read(), *this);
-                buffer->offset() += length;
+                buffer->offset() += bytes_transferred;
             } while (!unpack(*buffer, *data));
 
-            //socket->shutdown(boost::asio::ip::tcp::socket::shutdown_both, ec);
+            //socket->shutdown(boost::asio::ip::tcp::socket::shutdown_both, error);
         }
     }
     else
     {
-        BLOG(error, "value: %1% message: %2%") % ec.value() % ec.message();
+        BLOG(error, "value: %1% message: %2%") % error.value() % error.message();
     }
 }
 
@@ -122,7 +122,7 @@ int main(int argc, char* argv[])
 
     boost::asio::io_context io_context;
 
-    auto acceptor = std::make_shared<boost::asio::ip::tcp::acceptor>(
+    boost::asio::ip::tcp::acceptor acceptor(
         io_context,
         boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), *option.port));
 

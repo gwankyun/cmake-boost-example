@@ -41,7 +41,7 @@ public:
     {
     }
 
-    void operator()(boost::system::error_code ec = boost::system::error_code(), std::size_t length = 0);
+    void operator()(boost::system::error_code error = boost::system::error_code(), std::size_t bytes_transferred = 0);
 
 private:
     std::shared_ptr<boost::asio::ip::tcp::socket> socket;
@@ -52,9 +52,9 @@ private:
     boost::asio::coroutine coro;
 };
 
-void Client::operator()(boost::system::error_code ec, std::size_t length)
+void Client::operator()(boost::system::error_code error, std::size_t bytes_transferred)
 {
-    if (!ec)
+    if (!error)
     {
         reenter(coro)
         {
@@ -70,7 +70,7 @@ void Client::operator()(boost::system::error_code ec, std::size_t length)
             do
             {
                 yield socket->async_write_some(buffer->write(2), *this);
-                buffer->offset() += length;
+                buffer->offset() += bytes_transferred;
             } while (buffer->offset() < buffer->size());
             BLOG(debug, "async_write_some finished");
 
@@ -79,7 +79,7 @@ void Client::operator()(boost::system::error_code ec, std::size_t length)
             do
             {
                 yield socket->async_read_some(buffer->read(2), *this);
-                buffer->offset() += length;
+                buffer->offset() += bytes_transferred;
             } while (!unpack(*buffer, *data));
             BLOG(info, "uuid: %1%") % data->uuid;
             BLOG(info, "message: %1%") % data->message;
@@ -87,7 +87,7 @@ void Client::operator()(boost::system::error_code ec, std::size_t length)
     }
     else
     {
-        BLOG(error, "value: %1% message: %2%") % ec.value() % ec.message();
+        BLOG(error, "value: %1% message: %2%") % error.value() % error.message();
     }
 }
 
