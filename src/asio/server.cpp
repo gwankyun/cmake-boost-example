@@ -1,6 +1,3 @@
-#ifndef BOOST_ALL_NO_LIB
-#define BOOST_ALL_NO_LIB
-#endif
 #include <cstdint> // std::uint16_t std::uint32_t
 #include <string>
 #include <boost/algorithm/string.hpp>

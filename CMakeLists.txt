@@ -16,7 +16,7 @@ cmake_print_variables(CMAKE_CXX_COMPILER_VERSION)
 
 option(Boost_DEBUG "" OFF) # Boost調試
 option(Boost_USE_STATIC_LIBS "" ON) # 使用靜態庫
-option(Boost_USE_STATIC_RUNTIME "" ON) # 運行時靜態庫
+# option(Boost_USE_STATIC_RUNTIME "" ON) # 運行時靜態庫
 option(USE_CXX_STD_17 "" ON) # 使用C++17
 
 if(WIN32)
@@ -150,6 +150,7 @@ set(asio_sources
   src/asio/buffer.hpp
   src/asio/log.hpp
   src/asio/option.hpp
+  src/asio/socket.hpp
 )
 
 set(asio_include_directories include ${Boost_INCLUDE_DIRS})
@@ -160,7 +161,7 @@ set_target_properties(${data} PROPERTIES FOLDER ${asio})
 target_sources(${data} PRIVATE
   src/asio/data.cpp
   src/asio/data.h)
-target_link_libraries(${data} Boost::serialization bcrypt)
+target_link_libraries(${data} Boost::serialization)
 target_compile_options(${data} PRIVATE ${compiler_options})
 target_compile_features(${data} PRIVATE ${cxx_std})
 target_compile_definitions(${data} PRIVATE ${platform_definitions})
@@ -175,7 +176,7 @@ target_sources(${server} PRIVATE
   src/asio/server.h
   ${asio_sources})
 target_include_directories(${server} PRIVATE ${asio_include_directories})
-target_link_libraries(${server} ${asio_libraries})
+target_link_libraries(${server} PUBLIC ${asio_libraries})
 target_compile_options(${server} PRIVATE ${compiler_options})
 target_compile_features(${server} PRIVATE ${cxx_std})
 target_compile_definitions(${server} PRIVATE ${platform_definitions})

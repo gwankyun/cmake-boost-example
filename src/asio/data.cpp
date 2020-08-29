@@ -1,5 +1,5 @@
-#ifndef BOOST_ALL_NO_LIB
-#define BOOST_ALL_NO_LIB
+#ifdef BOOST_ALL_NO_LIB
+#undef BOOST_ALL_NO_LIB
 #endif
 #include "data.h"
 #include <sstream>

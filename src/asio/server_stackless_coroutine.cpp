@@ -1,6 +1,3 @@
-#ifndef BOOST_ALL_NO_LIB
-#define BOOST_ALL_NO_LIB
-#endif
 #include <cstdint> // std::uint16_t std::uint32_t
 #include <string>
 #include <boost/algorithm/string.hpp>
@@ -83,7 +80,7 @@ void Server::operator()(boost::system::error_code error, std::size_t bytes_trans
             data->message = "server.";
             send.reset(new std::string());
             pack(*data, *send);
-            header->length = send->size();
+            header->length = static_cast<uint32_t>(send->size());
 
             ASYNC_WRITE(socket, header.get(), sizeof(*header), 3, offset, bytes_transferred);
 

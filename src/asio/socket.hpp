@@ -9,16 +9,13 @@ struct Header
     std::uint32_t length;
 };
 
-void initialize(Header& header)
+inline void initialize(Header& header)
 {
     memset(header.sign, '@', sizeof(header.sign));
     header.length = 0;
 }
 
-#define DIS(...)
-
 #define ASYNC_WRITE(socket_, data_, len_, per_, offset_, bytes_transferred_) \
-    LOG(debug, "write begin"); \
     offset_ = 0; \
     do \
     { \
@@ -27,15 +24,9 @@ void initialize(Header& header)
                 (const char*)data_ + offset_, \
                 std::min(len_ - offset_, (std::size_t)per_)), *this); \
         offset_ += bytes_transferred_; \
-        if (false) \
-        { \
-            LOG(trace, "write: %1% offset_: %2%") % bytes_transferred_ % offset_; \
-        } \
-    } while (offset_ < len_); \
-    LOG(debug, "write end");
+    } while (offset_ < len_);
 
 #define ASYNC_READ(socket_, data_, len_, per_, offset_, bytes_transferred_) \
-    LOG(debug, "read begin"); \
     offset_ = 0; \
     do \
     { \
@@ -44,9 +35,4 @@ void initialize(Header& header)
                 (char*)data_ + offset_, \
                 std::min(len_ - offset_, (std::size_t)per_)), *this); \
         offset_ += bytes_transferred_; \
-        if (false) \
-        { \
-            LOG(trace, "write: %1% offset_: %2%") % bytes_transferred_ % offset_; \
-        } \
-    } while (offset_ < len_); \
-    LOG(debug, "read end");
+    } while (offset_ < len_);

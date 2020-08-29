@@ -1,7 +1,4 @@
-﻿#ifndef BOOST_ALL_NO_LIB
-#define BOOST_ALL_NO_LIB
-#endif
-#include <iostream>
+﻿#include <iostream>
 #include <string>
 #include <vector>
 #include <boost/filesystem.hpp>

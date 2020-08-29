@@ -1,6 +1,3 @@
-#ifndef BOOST_ALL_NO_LIB
-#define BOOST_ALL_NO_LIB
-#endif
 #include <cstdint> // std::uint16_t std::uint32_t
 #include <cstddef> // std::size_t
 #include <string>
@@ -74,7 +71,7 @@ void Client::operator()(boost::system::error_code error, std::size_t bytes_trans
             data->message = "client.";
             send.reset(new std::string());
             pack(*data, *send);
-            header->length = send->size();
+            header->length = static_cast<uint32_t>(send->size());
 
             LOG(debug, "header: %1% data: %2%") % sizeof(*header) % header->length;
 
