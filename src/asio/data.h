@@ -26,3 +26,7 @@ namespace boost
 void pack(const Data& data, Buffer& buffer);
 
 bool unpack(const Buffer& buffer, Data& data);
+
+void pack(const Data& data, std::string& buffer);
+
+void unpack(const std::string& buffer, Data& data);

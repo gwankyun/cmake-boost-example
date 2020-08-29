@@ -18,12 +18,12 @@
 #include <boost/program_options.hpp>
 #include <boost/asio/coroutine.hpp>
 #include <boost/asio/yield.hpp>
-#include "buffer.hpp"
 #include "log.hpp"
 #include "option.hpp"
 #include "client.h"
 #include "compiler_detection.h"
 #include "data.h"
+#include "socket.hpp"
 
 class Client
 {
@@ -45,11 +45,15 @@ public:
 
 private:
     std::shared_ptr<boost::asio::ip::tcp::socket> socket;
-    std::shared_ptr<Buffer> buffer;
     std::shared_ptr<Data> data;
     std::string address;
     std::uint16_t port;
     boost::asio::coroutine coro;
+
+    std::size_t offset = 0;
+    std::shared_ptr<std::string> send;
+    std::shared_ptr<Header> header;
+    std::shared_ptr<std::vector<char>> recv;
 };
 
 void Client::operator()(boost::system::error_code error, std::size_t bytes_transferred)
@@ -63,31 +67,42 @@ void Client::operator()(boost::system::error_code error, std::size_t bytes_trans
                     boost::asio::ip::make_address(address),
                     port), *this);
 
-            buffer.reset(new Buffer());
+            // async_write_some
+            header.reset(new Header());
+            initialize(*header);
             data.reset(new Data());
             data->message = "client.";
-            pack(*data, *buffer);
-            do
-            {
-                yield socket->async_write_some(buffer->write(2), *this);
-                buffer->offset() += bytes_transferred;
-            } while (buffer->offset() < buffer->size());
-            BLOG(debug, "async_write_some finished");
+            send.reset(new std::string());
+            pack(*data, *send);
+            header->length = send->size();
 
-            buffer.reset(new Buffer(2));
+            LOG(debug, "header: %1% data: %2%") % sizeof(*header) % header->length;
+
+            ASYNC_WRITE(socket, header.get(), sizeof(*header), 3, offset, bytes_transferred);
+
+            ASYNC_WRITE(socket, send->c_str(), send->size(), 3, offset, bytes_transferred);
+
+            LOG(debug, "async_write_some finished");
+
+            // async_read_some
+            header.reset(new Header());
+
+            ASYNC_READ(socket, header.get(), sizeof(*header), 3, offset, bytes_transferred);
+
+            recv.reset(new std::vector<char>(header->length + 1, '\0'));
+
+            ASYNC_READ(socket, recv->data(), header->length, 3, offset, bytes_transferred);
+
             data.reset(new Data());
-            do
-            {
-                yield socket->async_read_some(buffer->read(2), *this);
-                buffer->offset() += bytes_transferred;
-            } while (!unpack(*buffer, *data));
-            BLOG(info, "uuid: %1%") % data->uuid;
-            BLOG(info, "message: %1%") % data->message;
+            unpack(recv->data(), *data);
+
+            LOG(info, "uuid: %1%") % data->uuid;
+            LOG(info, "message: %1%") % data->message;
         }
     }
     else
     {
-        BLOG(error, "value: %1% message: %2%") % error.value() % error.message();
+        LOG(error, "value: %1% message: %2%") % error.value() % error.message();
     }
 }
 
@@ -102,25 +117,25 @@ filesystem::path execution_path()
 int main(int argc, char* argv[])
 {
     auto path = execution_path();
-    BLOG(info, "execution path: %1%") % path.string();
+    LOG(info, "execution path: %1%") % path.string();
 
     Option option;
     option.parse(argc, argv, path.parent_path().parent_path() / "asio.xml");
 
     if (!option.port)
     {
-        BLOG(error, "Invalid port");
+        LOG(error, "Invalid port");
         return 1;
     }
 
     if (!option.address)
     {
-        BLOG(error, "Invalid address");
+        LOG(error, "Invalid address");
         return 1;
     }
 
-    BLOG(info, "address: %1%") % (*option.address);
-    BLOG(info, "port: %1%") % (*option.port);
+    LOG(info, "address: %1%") % (*option.address);
+    LOG(info, "port: %1%") % (*option.port);
 
     boost::asio::io_context io_context;
 

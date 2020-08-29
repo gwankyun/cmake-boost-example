@@ -8,6 +8,7 @@
 #endif // !NOMINMAX
 #include <algorithm> // std::min std::copy_n
 #include <string>
+#include <iterator>
 
 class Buffer
 {

@@ -16,6 +16,7 @@
 #include "option.hpp"
 #include "compiler_detection.h"
 #include "data.h"
+#include "socket.hpp"
 
 class Server
 {
@@ -37,9 +38,13 @@ public:
 private:
     boost::asio::ip::tcp::acceptor& acceptor;
     std::shared_ptr<boost::asio::ip::tcp::socket> socket;
-    std::shared_ptr<Buffer> buffer;
     std::shared_ptr<Data> data;
     boost::asio::coroutine coro;
+
+    std::size_t offset = 0;
+    std::shared_ptr<std::string> send;
+    std::shared_ptr<Header> header;
+    std::shared_ptr<std::vector<char>> recv;
 };
 
 void Server::operator()(boost::system::error_code error, std::size_t bytes_transferred)
@@ -57,42 +62,41 @@ void Server::operator()(boost::system::error_code error, std::size_t bytes_trans
             } while (coro.is_parent());
 
             // async_read_some
-            buffer.reset(new Buffer(1024));
+            header.reset(new Header());
+
+            ASYNC_READ(socket, header.get(), sizeof(*header), 3, offset, bytes_transferred);
+            LOG(debug, "lenght: %1%") % header->length;
+
+            recv.reset(new std::vector<char>(header->length + 1, '\0'));
+            ASYNC_READ(socket, recv->data(), header->length, 3, offset, bytes_transferred);
+
             data.reset(new Data());
-            do
-            {
-                yield socket->async_read_some(buffer->read(), *this);
-                buffer->offset() += bytes_transferred;
-            } while (!unpack(*buffer, *data));
-            BLOG(info, "uuid: %1%") % data->uuid;
-            BLOG(info, "message: %1%") % data->message;
+            unpack(recv->data(), *data);
+
+            LOG(info, "uuid: %1%") % data->uuid;
+            LOG(info, "message: %1%") % data->message;
 
             // async_write_some
+            header.reset(new Header());
+            initialize(*header);
             data.reset(new Data());
             data->message = "server.";
-            buffer.reset(new Buffer());
-            pack(*data, *buffer);
-            do
-            {
-                yield socket->async_write_some(buffer->write(2), *this);
-                buffer->offset() += bytes_transferred;
-            } while (buffer->offset() < buffer->size());
-            BLOG(debug, "async_write_some finished");
+            send.reset(new std::string());
+            pack(*data, *send);
+            header->length = send->size();
 
-            buffer.reset(new Buffer(1024));
-            data.reset(new Data());
-            do
-            {
-                yield socket->async_read_some(buffer->read(), *this);
-                buffer->offset() += bytes_transferred;
-            } while (!unpack(*buffer, *data));
+            ASYNC_WRITE(socket, header.get(), sizeof(*header), 3, offset, bytes_transferred);
+
+            ASYNC_WRITE(socket, send->c_str(), send->size(), 3, offset, bytes_transferred);
+
+            LOG(debug, "async_write_some finished");
 
             //socket->shutdown(boost::asio::ip::tcp::socket::shutdown_both, error);
         }
     }
     else
     {
-        BLOG(error, "value: %1% message: %2%") % error.value() % error.message();
+        LOG(error, "value: %1% message: %2%") % error.value() % error.message();
     }
 }
 
@@ -104,21 +108,30 @@ filesystem::path execution_path()
     return path.parent_path();
 }
 
+//BOOST_LOG_ATTRIBUTE_KEYWORD(severity, "Severity", severity_level)
+
 int main(int argc, char* argv[])
 {
+    //boost::log::core::get()->set_filter
+    //(
+    //    boost::log::trivial::severity >= boost::log::trivial::info
+    //);
+    //boost::log::core::get()->set_filter(severity >= warning);
     auto path = execution_path();
-    BLOG(info, "execution path: %1%") % path.string();
+    LOG(info, "execution path: %1%") % path.string();
 
     Option option;
     option.parse(argc, argv, path.parent_path().parent_path() / "asio.xml");
 
     if (!option.port)
     {
-        BLOG(error, "Invalid port");
+        LOG(error, "Invalid port");
         return 1;
     }
 
-    BLOG(info, "port: %1%") % (*option.port);
+    LOG(info, "port: %1%") % (*option.port);
+
+    //LOG_IF(true, info, "%1%") % "yes";
 
     boost::asio::io_context io_context;
 

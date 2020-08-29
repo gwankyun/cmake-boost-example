@@ -26,9 +26,9 @@ void on_read(
 {
     if (error)
     {
-        BLOG(debug, "value: %1% message: %2%") % error.value() % error.message();
+        LOG(debug, "value: %1% message: %2%") % error.value() % error.message();
         auto remote_endpoint = socket->remote_endpoint();
-        BLOG(debug, "close %1%:%2%") % remote_endpoint.address().to_string() % remote_endpoint.port();
+        LOG(debug, "close %1%:%2%") % remote_endpoint.address().to_string() % remote_endpoint.port();
         return;
     }
 
@@ -38,7 +38,7 @@ void on_read(
 
     if (unpack(*buffer, data))
     {
-        BLOG(debug, "async_read_some: %1%") % data.message;
+        LOG(debug, "async_read_some: %1%") % data.message;
     }
     else
     {
@@ -59,12 +59,12 @@ void on_write(
 {
     if (error)
     {
-        BLOG(debug, "value: %1% message: %2%") % error.value() % error.message();
+        LOG(debug, "value: %1% message: %2%") % error.value() % error.message();
         auto remote_endpoint = socket->remote_endpoint();
-        BLOG(debug, "close %1%:%2%") % remote_endpoint.address().to_string() % remote_endpoint.port();
+        LOG(debug, "close %1%:%2%") % remote_endpoint.address().to_string() % remote_endpoint.port();
         return;
     }
-    //BLOG(debug, "bytes_transferred: %1%") % bytes_transferred;
+    //LOG(debug, "bytes_transferred: %1%") % bytes_transferred;
     buffer->offset() += bytes_transferred;
     if (buffer->offset() < buffer->size())
     {
@@ -77,7 +77,7 @@ void on_write(
     }
     else
     {
-        BLOG(debug, "async_write_some finished");
+        LOG(debug, "async_write_some finished");
         auto readBuffer = std::make_shared<Buffer>(1024);
         socket->async_read_some(
             buffer->read(),
@@ -95,11 +95,11 @@ void on_connect(
 {
     if (error)
     {
-        BLOG(debug, "value: %1% message: %2%") % error.value() % error.message();
+        LOG(debug, "value: %1% message: %2%") % error.value() % error.message();
         return;
     }
     auto remote_endpoint = socket->remote_endpoint();
-    BLOG(debug, "connect %1%:%2%") % remote_endpoint.address().to_string() % remote_endpoint.port();
+    LOG(debug, "connect %1%:%2%") % remote_endpoint.address().to_string() % remote_endpoint.port();
 
     auto buffer = std::make_shared<Buffer>();
     Data data;
@@ -125,25 +125,25 @@ filesystem::path execution_path()
 int main(int argc, char* argv[])
 {
     auto path = execution_path();
-    BLOG(info, "execution path: %1%") % path.string();
+    LOG(info, "execution path: %1%") % path.string();
 
     Option option;
     option.parse(argc, argv, path.parent_path().parent_path() / "asio.xml");
 
     if (!option.port)
     {
-        BLOG(error, "Invalid port");
+        LOG(error, "Invalid port");
         return 1;
     }
 
     if (!option.address)
     {
-        BLOG(error, "Invalid address");
+        LOG(error, "Invalid address");
         return 1;
     }
 
-    BLOG(info, "address: %1%") % (*option.address);
-    BLOG(info, "port: %1%") % (*option.port);
+    LOG(info, "address: %1%") % (*option.address);
+    LOG(info, "port: %1%") % (*option.port);
 
     boost::asio::io_context io_context;
 

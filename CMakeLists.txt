@@ -61,7 +61,7 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib)
 
 # BoostConfig.cmake所在路徑
 if(NOT Boost_DIR)
-  set(Boost_DIR "C:/local/boost_1_73_0/lib64-msvc-14.2/cmake/Boost-1.73.0")
+  set(Boost_DIR "C:/local/boost_1_74_0/lib64-msvc-14.2/cmake/Boost-1.74.0")
 endif()
 cmake_print_variables(Boost_DIR)
 
@@ -79,7 +79,7 @@ endif()
 cmake_print_variables(Boost_USE_STATIC_LIBS)
 cmake_print_variables(Boost_USE_STATIC_RUNTIME)
 
-find_package(Boost 1.73.0 REQUIRED COMPONENTS date_time filesystem log program_options serialization)
+find_package(Boost 1.74.0 REQUIRED COMPONENTS date_time filesystem log program_options serialization)
 
 if(Boost_FOUND)
   cmake_print_variables(Boost_INCLUDE_DIRS)
