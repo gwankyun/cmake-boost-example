@@ -5,14 +5,26 @@
 
 struct Header
 {
-    char sign[4];
-    std::uint32_t length;
+    char sign[4]; // 4個@表示包頭
+    std::uint16_t headerLength; // 包頭長
+    std::uint16_t headerType; // 包頭類型，默認0，為拓展而留
+    std::uint32_t headerChecksum; // 包頭校驗和
+    std::uint32_t bodyLength; // 包體長
+    std::uint16_t bodyMajorType; // 包體主類型，和bodyMinorType配合標識包體的數據類型
+    std::uint16_t bodyMinorType; // 包體次類型
+    std::uint32_t bodyChecksum; // 包頭校驗和
 };
 
 inline void initialize(Header& header)
 {
     memset(header.sign, '@', sizeof(header.sign));
-    header.length = 0;
+    header.headerLength = sizeof(header);
+    header.headerType = 0;
+    header.headerChecksum = 0;
+    header.bodyLength = 0;
+    header.bodyMajorType = 0;
+    header.bodyMinorType = 0;
+    header.bodyChecksum = 0;
 }
 
 #define ASYNC_WRITE(socket_, data_, len_, per_, offset_, bytes_transferred_) \

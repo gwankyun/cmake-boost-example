@@ -62,10 +62,10 @@ void Server::operator()(boost::system::error_code error, std::size_t bytes_trans
             header.reset(new Header());
 
             ASYNC_READ(socket, header.get(), sizeof(*header), 3, offset, bytes_transferred);
-            LOG(debug, "lenght: %1%") % header->length;
+            LOG(debug, "lenght: %1%") % header->bodyLength;
 
-            recv.reset(new std::vector<char>(header->length + 1, '\0'));
-            ASYNC_READ(socket, recv->data(), header->length, 3, offset, bytes_transferred);
+            recv.reset(new std::vector<char>(header->bodyLength + 1, '\0'));
+            ASYNC_READ(socket, recv->data(), header->bodyLength, 3, offset, bytes_transferred);
 
             data.reset(new Data());
             unpack(recv->data(), *data);
@@ -80,7 +80,7 @@ void Server::operator()(boost::system::error_code error, std::size_t bytes_trans
             data->message = "server.";
             send.reset(new std::string());
             pack(*data, *send);
-            header->length = static_cast<uint32_t>(send->size());
+            header->bodyLength = static_cast<uint32_t>(send->size());
 
             ASYNC_WRITE(socket, header.get(), sizeof(*header), 3, offset, bytes_transferred);
 

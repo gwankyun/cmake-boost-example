@@ -218,3 +218,14 @@ target_link_libraries(${client_stackless_coroutine} ${asio_libraries})
 target_compile_options(${client_stackless_coroutine} PRIVATE ${compiler_options})
 target_compile_features(${client_stackless_coroutine} PRIVATE ${cxx_std})
 target_compile_definitions(${client_stackless_coroutine} PRIVATE ${platform_definitions})
+
+set(preprocessor preprocessor)
+add_executable(${preprocessor})
+target_sources(${preprocessor} PRIVATE
+  src/preprocessor.cpp)
+target_compile_options(${preprocessor} PUBLIC ${compiler_options})
+target_include_directories(${preprocessor}
+  PRIVATE
+    include ${Boost_INCLUDE_DIRS})
+target_compile_definitions(${preprocessor}
+  PRIVATE ${platform_definitions})
