@@ -43,7 +43,7 @@ public:
     boost::optional<std::string> address;
     boost::optional<uint16_t> port;
 
-    void parse(int argc, char* argv[], const filesystem::path& path) CXX_OVERRIDE
+    void parse(int argc, char* argv[], const filesystem::path& path) FEATURE_OVERRIDE
     {
         boost::program_options::options_description options_description;
         options_description.add_options()

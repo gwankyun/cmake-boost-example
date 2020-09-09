@@ -9,6 +9,7 @@ project(${project})
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 include(CMakePrintHelpers)
 include(WriteCompilerDetectionHeader)
+include(CheckIncludeFileCXX)
 
 cmake_print_variables(CMAKE_SYSTEM_NAME)
 cmake_print_variables(CMAKE_CXX_COMPILER_ID)
@@ -16,7 +17,7 @@ cmake_print_variables(CMAKE_CXX_COMPILER_VERSION)
 
 option(Boost_DEBUG "" OFF) # Boost調試
 option(Boost_USE_STATIC_LIBS "" ON) # 使用靜態庫
-# option(Boost_USE_STATIC_RUNTIME "" ON) # 運行時靜態庫
+option(Boost_USE_STATIC_RUNTIME "" OFF) # 運行時靜態庫
 option(USE_CXX_STD_17 "" ON) # 使用C++17
 
 if(WIN32)
@@ -45,10 +46,67 @@ endif()
 
 write_compiler_detection_header(
   FILE "${CMAKE_CURRENT_SOURCE_DIR}/include/compiler_detection.h"
-  PREFIX CXX
-  COMPILERS MSVC
+  PREFIX FEATURE
+  COMPILERS AppleClang Clang GNU MSVC SunPro Intel
+  ALLOW_UNKNOWN_COMPILER_VERSIONS
   FEATURES
+    cxx_aggregate_default_initializers
+    cxx_alias_templates
+    cxx_alignas
+    cxx_alignof
+    cxx_attributes
+    cxx_attribute_deprecated
+    cxx_auto_type
+    cxx_binary_literals
+    cxx_constexpr
+    cxx_contextual_conversions
+    cxx_decltype_incomplete_return_types
+    cxx_decltype
+    cxx_decltype_auto
+    cxx_default_function_template_args
+    cxx_defaulted_functions
+    cxx_defaulted_move_initializers
+    cxx_delegating_constructors
+    cxx_deleted_functions
+    cxx_digit_separators
+    cxx_enum_forward_declarations
+    cxx_explicit_conversions
+    cxx_extended_friend_declarations
+    cxx_extern_templates
+    cxx_final
+    cxx_func_identifier
+    cxx_generalized_initializers
+    cxx_generic_lambdas
+    cxx_inheriting_constructors
+    cxx_inline_namespaces
+    cxx_lambdas
+    cxx_lambda_init_captures
+    cxx_local_type_template_args
+    cxx_long_long_type
+    cxx_noexcept
+    cxx_nonstatic_member_init
+    cxx_nullptr
     cxx_override
+    cxx_range_for
+    cxx_raw_string_literals
+    cxx_reference_qualified_functions
+    cxx_relaxed_constexpr
+    cxx_return_type_deduction
+    cxx_right_angle_brackets
+    cxx_rvalue_references
+    cxx_sizeof_member
+    cxx_static_assert
+    cxx_strong_enums
+    cxx_thread_local
+    cxx_trailing_return_types
+    cxx_unicode_literals
+    cxx_uniform_initialization
+    cxx_unrestricted_unions
+    cxx_user_literals
+    cxx_variable_templates
+    cxx_variadic_macros
+    cxx_variadic_templates
+    cxx_template_template_parameters
 )
 
 # 啟用IDE目錄功能
@@ -108,6 +166,8 @@ set(compiler_options
 set(platform_definitions
   "$<$<PLATFORM_ID:Windows>:_WIN32_WINNT=${_WIN32_WINNT}>")
 
+add_compile_definitions(${platform_definitions})
+
 # 編譯器選項
 target_compile_options(${main} PUBLIC ${compiler_options})
 
@@ -134,8 +194,6 @@ target_link_libraries(${test} Boost::serialization)
 target_include_directories(${test}
   PRIVATE
     include ${Boost_INCLUDE_DIRS})
-target_compile_definitions(${test}
-  PRIVATE ${platform_definitions})
 
 # Boost.Asio
 set(asio asio)
@@ -164,7 +222,6 @@ target_sources(${data} PRIVATE
 target_link_libraries(${data} Boost::serialization)
 target_compile_options(${data} PRIVATE ${compiler_options})
 target_compile_features(${data} PRIVATE ${cxx_std})
-target_compile_definitions(${data} PRIVATE ${platform_definitions})
 
 set(asio_libraries Boost::log Boost::program_options ${data})
 
@@ -179,7 +236,6 @@ target_include_directories(${server} PRIVATE ${asio_include_directories})
 target_link_libraries(${server} PUBLIC ${asio_libraries})
 target_compile_options(${server} PRIVATE ${compiler_options})
 target_compile_features(${server} PRIVATE ${cxx_std})
-target_compile_definitions(${server} PRIVATE ${platform_definitions})
 
 set(client client)
 add_executable(${client})
@@ -192,7 +248,6 @@ target_include_directories(${client} PRIVATE ${asio_include_directories})
 target_link_libraries(${client} ${asio_libraries})
 target_compile_options(${client} PRIVATE ${compiler_options})
 target_compile_features(${client} PRIVATE ${cxx_std})
-target_compile_definitions(${client} PRIVATE ${platform_definitions})
 
 ## 協程
 set(server_stackless_coroutine server_stackless_coroutine)
@@ -205,7 +260,6 @@ target_include_directories(${server_stackless_coroutine} PRIVATE ${asio_include_
 target_link_libraries(${server_stackless_coroutine} ${asio_libraries})
 target_compile_options(${server_stackless_coroutine} PRIVATE ${compiler_options})
 target_compile_features(${server_stackless_coroutine} PRIVATE ${cxx_std})
-target_compile_definitions(${server_stackless_coroutine} PRIVATE ${platform_definitions})
 
 set(client_stackless_coroutine client_stackless_coroutine)
 add_executable(${client_stackless_coroutine})
@@ -217,7 +271,6 @@ target_include_directories(${client_stackless_coroutine} PRIVATE ${asio_include_
 target_link_libraries(${client_stackless_coroutine} ${asio_libraries})
 target_compile_options(${client_stackless_coroutine} PRIVATE ${compiler_options})
 target_compile_features(${client_stackless_coroutine} PRIVATE ${cxx_std})
-target_compile_definitions(${client_stackless_coroutine} PRIVATE ${platform_definitions})
 
 set(preprocessor preprocessor)
 add_executable(${preprocessor})
@@ -227,5 +280,3 @@ target_compile_options(${preprocessor} PUBLIC ${compiler_options})
 target_include_directories(${preprocessor}
   PRIVATE
     include ${Boost_INCLUDE_DIRS})
-target_compile_definitions(${preprocessor}
-  PRIVATE ${platform_definitions})
