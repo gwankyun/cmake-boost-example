@@ -45,7 +45,7 @@ if(WIN32)
 endif()
 
 write_compiler_detection_header(
-  FILE "${CMAKE_CURRENT_SOURCE_DIR}/include/compiler_detection.h"
+  FILE "${CMAKE_CURRENT_SOURCE_DIR}/include/compiler_detection.hpp"
   PREFIX FEATURE
   COMPILERS AppleClang Clang GNU MSVC SunPro Intel
   ALLOW_UNKNOWN_COMPILER_VERSIONS
