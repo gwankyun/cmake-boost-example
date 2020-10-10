@@ -15,6 +15,12 @@
 #include "data.h"
 #include "socket.hpp"
 
+enum struct OperatorType
+{
+    Socket = 1,
+    Timer
+};
+
 class Server
 {
 public:
@@ -30,6 +36,14 @@ public:
     {
     }
 
+    void async_wait(std::function<void(boost::system::error_code, std::size_t)> handler)
+    {
+        timer->async_wait([handler](boost::system::error_code error_code)
+            {
+                handler(error_code, 0);
+            });
+    }
+
     void operator()(boost::system::error_code error = boost::system::error_code(), std::size_t bytes_transferred = 0);
 
 private:
@@ -42,14 +56,33 @@ private:
     std::shared_ptr<std::string> send;
     std::shared_ptr<Header> header;
     std::shared_ptr<std::vector<char>> recv;
+
+    //boost::asio::io_context& io_context;
+    std::shared_ptr<boost::asio::steady_timer> timer;
+    OperatorType type;
 };
 
 void Server::operator()(boost::system::error_code error, std::size_t bytes_transferred)
 {
-    if (!error)
+    if (!error || type == OperatorType::Timer)
     {
         reenter(coro)
         {
+            do
+            {
+                timer.reset(new boost::asio::steady_timer(acceptor.get_executor(), boost::asio::chrono::seconds(1)));
+                yield async_wait(*this);
+                //LOG(info, "timer out");
+                //BLOG(info, "time out %1%", 1);
+                //BLOG(debug, "time out %1%", 2);
+                //BLOG(error, "time out %1%", 3);
+                if (!error)
+                {
+                    LOG(info, "time out");
+                    return;
+                }
+            } while (true);
+
             // async_accept
             do
             {
@@ -62,7 +95,7 @@ void Server::operator()(boost::system::error_code error, std::size_t bytes_trans
             header.reset(new Header());
 
             ASYNC_READ(socket, header.get(), sizeof(*header), 3, offset, bytes_transferred);
-            LOG(debug, "lenght: %1%") % header->bodyLength;
+            LOG(debug, "length: %1%", header->bodyLength);
 
             recv.reset(new std::vector<char>(header->bodyLength + 1, '\0'));
             ASYNC_READ(socket, recv->data(), header->bodyLength, 3, offset, bytes_transferred);
@@ -70,8 +103,8 @@ void Server::operator()(boost::system::error_code error, std::size_t bytes_trans
             data.reset(new Data());
             unpack(recv->data(), *data);
 
-            LOG(info, "uuid: %1%") % data->uuid;
-            LOG(info, "message: %1%") % data->message;
+            LOG(info, "uuid: %1%", data->uuid);
+            LOG(info, "message: %1%", data->message);
 
             // async_write_some
             header.reset(new Header());
@@ -93,9 +126,10 @@ void Server::operator()(boost::system::error_code error, std::size_t bytes_trans
     }
     else
     {
-        LOG(error, "value: %1% message: %2%") % error.value() % error.message();
+        LOG(error, "value: %1% message: %2%", error.value(), error.message());
     }
 }
+
 
 filesystem::path execution_path()
 {
@@ -107,15 +141,64 @@ filesystem::path execution_path()
 
 //BOOST_LOG_ATTRIBUTE_KEYWORD(severity, "Severity", severity_level)
 
+void on_wait(boost::system::error_code error_code, std::shared_ptr<boost::asio::steady_timer> timer)
+{
+    if (error_code)
+    {
+        LOG(info, "%1%", error_code.message());
+    }
+    LOG(info, "timer out");
+    auto new_timer = std::make_shared<boost::asio::steady_timer>(timer->get_executor(), boost::asio::chrono::seconds(1));
+    new_timer->async_wait([new_timer](boost::system::error_code error_code)
+        {
+            on_wait(error_code, new_timer);
+        });
+}
+
+class Timer
+{
+public:
+    Timer(boost::asio::io_context& io_context_)
+        : io_context(io_context_)
+    {
+    }
+
+    ~Timer()
+    {
+    }
+
+    void operator()(boost::system::error_code error = boost::system::error_code());
+
+private:
+    boost::asio::coroutine coro;
+    boost::asio::io_context& io_context;
+    std::shared_ptr<boost::asio::steady_timer> timer;
+};
+
+void Timer::operator()(boost::system::error_code error)
+{
+
+    if (!error)
+    {
+        reenter(coro)
+        {
+            do
+            {
+                timer.reset(new boost::asio::steady_timer(io_context, boost::asio::chrono::seconds(1)));
+                yield timer->async_wait(*this);
+                LOG(info, "timer out");
+                fork Timer(*this)();
+            } while (coro.is_parent());
+        }
+    }
+}
+
 int main(int argc, char* argv[])
 {
-    //boost::log::core::get()->set_filter
-    //(
-    //    boost::log::trivial::severity >= boost::log::trivial::info
-    //);
-    //boost::log::core::get()->set_filter(severity >= warning);
+    LOG(info, "");
+    LOG(info, "start");
     auto path = execution_path();
-    LOG(info, "execution path: %1%") % path.string();
+    LOG(info, "execution path: %1%", path.string());
 
     Option option;
     option.parse(argc, argv, path.parent_path().parent_path() / "asio.xml");
@@ -126,9 +209,7 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-    LOG(info, "port: %1%") % (*option.port);
-
-    //LOG_IF(true, info, "%1%") % "yes";
+    LOG(info, "port: %1%", *option.port);
 
     boost::asio::io_context io_context;
 
@@ -138,7 +219,22 @@ int main(int argc, char* argv[])
 
     {
         auto socket = std::make_shared<boost::asio::ip::tcp::socket>(io_context);
-        Server(acceptor, socket)();
+        //Server(acceptor, socket)();
+        auto server = std::make_shared<Server>(acceptor, socket);
+        (*server)();
+    }
+
+    {
+        //auto timer = std::make_shared<boost::asio::steady_timer>(io_context, boost::asio::chrono::seconds(1));
+        //timer->async_wait([timer](boost::system::error_code error_code)
+        //    {
+        //        on_wait(error_code, timer);
+        //    });
+    }
+
+    {
+        //auto timer = std::make_shared<Timer>(io_context);
+        //(*timer)();
     }
 
     io_context.run();

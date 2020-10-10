@@ -27,6 +27,7 @@ inline void initialize(Header& header)
     header.bodyChecksum = 0;
 }
 
+#ifndef ASYNC_WRITE
 #define ASYNC_WRITE(socket_, data_, len_, per_, offset_, bytes_transferred_) \
     offset_ = 0; \
     do \
@@ -37,7 +38,9 @@ inline void initialize(Header& header)
                 std::min(len_ - offset_, (std::size_t)per_)), *this); \
         offset_ += bytes_transferred_; \
     } while (offset_ < len_);
+#endif // !ASYNC_WRITE
 
+#ifndef ASYNC_READ
 #define ASYNC_READ(socket_, data_, len_, per_, offset_, bytes_transferred_) \
     offset_ = 0; \
     do \
@@ -48,3 +51,26 @@ inline void initialize(Header& header)
                 std::min(len_ - offset_, (std::size_t)per_)), *this); \
         offset_ += bytes_transferred_; \
     } while (offset_ < len_);
+#endif // !ASYNC_READ
+
+#ifndef ASYNC_WAIT_WRITE
+#define ASYNC_WAIT_WRITE(socket_, data_, len_, per_, offset_, bytes_transferred_, timer_) \
+    type = OperatorType::Timer; \
+    yield async_wait(*this); \
+    if (!error) \
+    { \
+        LOG(info, "time out"); \
+        return; \
+    } \
+    type = OperatorType::Socket; \
+    ASYNC_READ(socket_, data_, len_, per_, offset_, bytes_transferred_);
+#endif // !ASYNC_WAIT_WRITE
+
+
+//#ifndef ASYNC_WAIT
+//#define ASYNC_WAIT(timer_, duration_) \
+//    timer.reset(new boost::asio::steady_timer(acceptor.get_executor(), ); \
+//    yield async_wait(*this); \
+//#endif // !ASYNC_WAIT
+
+

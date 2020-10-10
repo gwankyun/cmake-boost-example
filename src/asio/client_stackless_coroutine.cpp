@@ -73,7 +73,7 @@ void Client::operator()(boost::system::error_code error, std::size_t bytes_trans
             pack(*data, *send);
             header->bodyLength = static_cast<uint32_t>(send->size());
 
-            LOG(debug, "header: %1% data: %2%") % sizeof(*header) % header->bodyLength;
+            LOG(debug, "header: %1% data: %2%", sizeof(*header), header->bodyLength);
 
             ASYNC_WRITE(socket, header.get(), sizeof(*header), 3, offset, bytes_transferred);
 
@@ -93,13 +93,13 @@ void Client::operator()(boost::system::error_code error, std::size_t bytes_trans
             data.reset(new Data());
             unpack(recv->data(), *data);
 
-            LOG(info, "uuid: %1%") % data->uuid;
-            LOG(info, "message: %1%") % data->message;
+            LOG(info, "uuid: %1%", data->uuid);
+            LOG(info, "message: %1%", data->message);
         }
     }
     else
     {
-        LOG(error, "value: %1% message: %2%") % error.value() % error.message();
+        LOG(error, "value: %1% message: %2%", error.value(), error.message());
     }
 }
 
@@ -114,7 +114,7 @@ filesystem::path execution_path()
 int main(int argc, char* argv[])
 {
     auto path = execution_path();
-    LOG(info, "execution path: %1%") % path.string();
+    LOG(info, "execution path: %1%", path.string());
 
     Option option;
     option.parse(argc, argv, path.parent_path().parent_path() / "asio.xml");
@@ -131,8 +131,8 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-    LOG(info, "address: %1%") % (*option.address);
-    LOG(info, "port: %1%") % (*option.port);
+    LOG(info, "address: %1%", *option.address);
+    LOG(info, "port: %1%", *option.port);
 
     boost::asio::io_context io_context;
 

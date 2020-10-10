@@ -23,9 +23,9 @@ void on_read(
 {
     if (error)
     {
-        LOG(debug, "value: %1% message: %2%") % error.value() % error.message();
+        LOG(debug, "value: %1% message: %2%", error.value(), error.message());
         auto remote_endpoint = socket->remote_endpoint();
-        LOG(debug, "close %1%:%2%") % remote_endpoint.address().to_string() % remote_endpoint.port();
+        LOG(debug, "close %1%:%2%", remote_endpoint.address().to_string(), remote_endpoint.port());
         return;
     }
 
@@ -35,7 +35,7 @@ void on_read(
 
     if (unpack(*buffer, data))
     {
-        LOG(debug, "async_read_some: %1%") % data.message;
+        LOG(debug, "async_read_some: %1%", data.message);
     }
     else
     {
@@ -56,9 +56,9 @@ void on_write(
 {
     if (error)
     {
-        LOG(debug, "value: %1% message: %2%") % error.value() % error.message();
+        LOG(debug, "value: %1% message: %2%", error.value(), error.message());
         auto remote_endpoint = socket->remote_endpoint();
-        LOG(debug, "close %1%:%2%") % remote_endpoint.address().to_string() % remote_endpoint.port();
+        LOG(debug, "close %1%:%2%", remote_endpoint.address().to_string(), remote_endpoint.port());
         return;
     }
     //LOG(debug, "bytes_transferred: %1%") % bytes_transferred;
@@ -92,11 +92,11 @@ void on_connect(
 {
     if (error)
     {
-        LOG(debug, "value: %1% message: %2%") % error.value() % error.message();
+        LOG(debug, "value: %1% message: %2%", error.value(), error.message());
         return;
     }
     auto remote_endpoint = socket->remote_endpoint();
-    LOG(debug, "connect %1%:%2%") % remote_endpoint.address().to_string() % remote_endpoint.port();
+    LOG(debug, "connect %1%:%2%", remote_endpoint.address().to_string(), remote_endpoint.port());
 
     auto buffer = std::make_shared<Buffer>();
     Data data;
@@ -122,7 +122,7 @@ filesystem::path execution_path()
 int main(int argc, char* argv[])
 {
     auto path = execution_path();
-    LOG(info, "execution path: %1%") % path.string();
+    LOG(info, "execution path: %1%", path.string());
 
     Option option;
     option.parse(argc, argv, path.parent_path().parent_path() / "asio.xml");
@@ -139,8 +139,8 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-    LOG(info, "address: %1%") % (*option.address);
-    LOG(info, "port: %1%") % (*option.port);
+    LOG(info, "address: %1%", *option.address);
+    LOG(info, "port: %1%", *option.port);
 
     boost::asio::io_context io_context;
 
