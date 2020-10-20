@@ -49,6 +49,11 @@ inline void blog(boost::log::trivial::severity_level level, std::string info)
 BOOST_PP_REPEAT_FROM_TO(1, 10, REPEAT_BLOG, _);
 
 #ifndef LOG
-#define LOG(lvl_, ...) blog(boost::log::trivial::##lvl_, (boost::format("[%-10s:% 4d] ") % std::string(__FUNCTION__).substr(0, 10) % __LINE__).str(), ##__VA_ARGS__)
+#  define LOG(lvl_, ...) blog(boost::log::trivial::##lvl_, (boost::format("[%-10s:% 4d] ") % std::string(__FUNCTION__).substr(0, 10) % __LINE__).str(), ##__VA_ARGS__)
 #endif // !LOG
+
+#ifndef LOG_IF
+#  define LOG_IF(c, lvl_, ...) if (c) { LOG(lvl_, ##__VA_ARGS__); }
+#endif // !LOG_IF
+
 

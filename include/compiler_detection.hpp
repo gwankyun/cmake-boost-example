@@ -40,6 +40,8 @@
 # define FEATURE_COMPILER_IS_ARMCC 0
 # define FEATURE_COMPILER_IS_AppleClang 0
 # define FEATURE_COMPILER_IS_ARMClang 0
+# define FEATURE_COMPILER_IS_IntelDPCPP 0
+# define FEATURE_COMPILER_IS_IntelClang 0
 # define FEATURE_COMPILER_IS_Clang 0
 # define FEATURE_COMPILER_IS_GNU 0
 # define FEATURE_COMPILER_IS_MSVC 0
@@ -138,6 +140,14 @@
 #elif defined(__clang__) && defined(__ARMCOMPILER_VERSION)
 # undef FEATURE_COMPILER_IS_ARMClang
 # define FEATURE_COMPILER_IS_ARMClang 1
+
+#elif defined(__clang__) && defined(__INTEL_DPCPP_COMPILER__)
+# undef FEATURE_COMPILER_IS_IntelDPCPP
+# define FEATURE_COMPILER_IS_IntelDPCPP 1
+
+#elif defined(__clang__) && defined(__INTEL_CLANG_COMPILER)
+# undef FEATURE_COMPILER_IS_IntelClang
+# define FEATURE_COMPILER_IS_IntelClang 1
 
 #elif defined(__clang__)
 # undef FEATURE_COMPILER_IS_Clang

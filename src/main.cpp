@@ -5,14 +5,35 @@
 #include <boost/log/trivial.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/crc.hpp>
+#include <boost/outcome.hpp>
 #include "asio/log.hpp"
 #include "hex.hpp"
+
+namespace outcome = BOOST_OUTCOME_V2_NAMESPACE;
 
 inline uint32_t crc(const void* data, std::size_t len)
 {
     boost::crc_32_type crc_;
     crc_.process_bytes(data, len);
     return crc_.checksum();
+}
+
+enum Div
+{
+    Success = 0,
+    Zero
+};
+
+namespace test
+{
+    inline outcome::result<int> div(int a, int b)
+    {
+        if (b == 0)
+        {
+            return boost::system::errc::invalid_argument;
+        }
+        return outcome::success<int>(a / b);
+    }
 }
 
 int main()
@@ -43,5 +64,7 @@ int main()
     LOG(info, "log: %1% %2% %3% %4% %5% %6% %7% %8% %9%", 1, 2, 3, 4, 5, 6, 7, 8, 9);
     LOG(info, 2);
     LOG(info);
+    LOG_IF(test::div(2, 1), info, "%1% div %2% = %3%", 2, 1, test::div(2, 1).value());
+    LOG_IF(test::div(2, 0), info, "%1% div %2% = %3%", 2, 0, test::div(2, 0).value());
     return 0;
 }
