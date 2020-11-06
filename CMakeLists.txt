@@ -117,12 +117,6 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib)
 
-# BoostConfig.cmake所在路徑
-if(NOT Boost_DIR)
-  set(Boost_DIR "C:/local/boost_1_74_0/lib64-msvc-14.2/cmake/Boost-1.74.0")
-endif()
-cmake_print_variables(Boost_DIR)
-
 if(Boost_USE_STATIC_RUNTIME)
   set(Boost_USE_STATIC_LIBS ON)
   set(runtime
@@ -190,7 +184,7 @@ target_sources(${test} PRIVATE
   src/test/test2.cpp
   src/asio/test.cpp)
 target_compile_options(${test} PUBLIC ${compiler_options})
-target_link_libraries(${test} Boost::serialization)
+target_link_libraries(${test} Boost::serialization Boost::log)
 target_include_directories(${test}
   PRIVATE
     include ${Boost_INCLUDE_DIRS})
