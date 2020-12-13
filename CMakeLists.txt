@@ -1,5 +1,5 @@
 ﻿# cmake最低版本
-cmake_minimum_required(VERSION 3.18)
+cmake_minimum_required(VERSION 3.19)
 
 # 項目名
 set(project cmake-boost-example)
@@ -131,7 +131,7 @@ endif()
 cmake_print_variables(Boost_USE_STATIC_LIBS)
 cmake_print_variables(Boost_USE_STATIC_RUNTIME)
 
-find_package(Boost 1.74.0 REQUIRED COMPONENTS date_time filesystem log program_options serialization)
+find_package(Boost REQUIRED COMPONENTS date_time filesystem log program_options serialization)
 
 if(Boost_FOUND)
   cmake_print_variables(Boost_INCLUDE_DIRS)
