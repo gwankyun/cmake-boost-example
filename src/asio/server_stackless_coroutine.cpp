@@ -46,9 +46,20 @@ public:
 
     void operator()(boost::system::error_code error = boost::system::error_code(), std::size_t bytes_transferred = 0);
 
+    //std::shared_ptr<bool> isTimer;
+
+    void stopTimer()
+    {
+        LOG(debug, "");
+        //*isTimer = false;
+        timer->cancel();
+    }
+
+    std::shared_ptr<boost::asio::steady_timer> timer;
+    std::shared_ptr<boost::asio::ip::tcp::socket> socket;
+
 private:
     boost::asio::ip::tcp::acceptor& acceptor;
-    std::shared_ptr<boost::asio::ip::tcp::socket> socket;
     std::shared_ptr<Data> data;
     boost::asio::coroutine coro;
 
@@ -58,31 +69,16 @@ private:
     std::shared_ptr<std::vector<char>> recv;
 
     //boost::asio::io_context& io_context;
-    std::shared_ptr<boost::asio::steady_timer> timer;
     OperatorType type;
+    int flag = 0;
 };
 
 void Server::operator()(boost::system::error_code error, std::size_t bytes_transferred)
 {
-    if (!error || type == OperatorType::Timer)
+    if (!error)
     {
         reenter(coro)
         {
-            do
-            {
-                timer.reset(new boost::asio::steady_timer(acceptor.get_executor(), boost::asio::chrono::seconds(1)));
-                yield async_wait(*this);
-                //LOG(info, "timer out");
-                //BLOG(info, "time out %1%", 1);
-                //BLOG(debug, "time out %1%", 2);
-                //BLOG(error, "time out %1%", 3);
-                if (!error)
-                {
-                    LOG(info, "time out");
-                    return;
-                }
-            } while (true);
-
             // async_accept
             do
             {
@@ -93,12 +89,32 @@ void Server::operator()(boost::system::error_code error, std::size_t bytes_trans
 
             // async_read_some
             header.reset(new Header());
+            offset = 0;
+            do
+            {
+                yield
+                {
+                    asyncWait(*socket, boost::asio::chrono::seconds(3), *this);
+                    asyncRead(*socket, header.get(), sizeof(*header), offset, *this);
+                }
+                stopTimer();
+                offset += bytes_transferred;
+            } while (offset < sizeof(*header));
 
-            ASYNC_READ(socket, header.get(), sizeof(*header), 3, offset, bytes_transferred);
             LOG(debug, "length: %1%", header->bodyLength);
 
             recv.reset(new std::vector<char>(header->bodyLength + 1, '\0'));
-            ASYNC_READ(socket, recv->data(), header->bodyLength, 3, offset, bytes_transferred);
+            offset = 0;
+            do
+            {
+                yield
+                {
+                    asyncWait(*socket, boost::asio::chrono::seconds(3), *this);
+                    asyncRead(*socket, recv->data(), header->bodyLength, offset, *this);
+                }
+                stopTimer();
+                offset += bytes_transferred;
+            } while (offset < header->bodyLength);
 
             data.reset(new Data());
             unpack(recv->data(), *data);
@@ -115,9 +131,29 @@ void Server::operator()(boost::system::error_code error, std::size_t bytes_trans
             pack(*data, *send);
             header->bodyLength = static_cast<uint32_t>(send->size());
 
-            ASYNC_WRITE(socket, header.get(), sizeof(*header), 3, offset, bytes_transferred);
+            offset = 0;
+            do
+            {
+                yield
+                {
+                    asyncWait(*socket, boost::asio::chrono::seconds(3), *this);
+                    asyncWrite(*socket, header.get(), sizeof(*header), offset, *this);
+                }
+                stopTimer();
+                offset += bytes_transferred;
+            } while (offset < sizeof(*header));
 
-            ASYNC_WRITE(socket, send->c_str(), send->size(), 3, offset, bytes_transferred);
+            offset = 0;
+            do
+            {
+                yield
+                {
+                    asyncWait(*socket, boost::asio::chrono::seconds(3), *this);
+                    asyncWrite(*socket, send->c_str(), send->size(), offset, *this);
+                }
+                stopTimer();
+                offset += bytes_transferred;
+            } while (offset < send->size());
 
             LOG(debug, "async_write_some finished");
 
@@ -138,8 +174,6 @@ filesystem::path execution_path()
     filesystem::path path(fileName);
     return path.parent_path();
 }
-
-//BOOST_LOG_ATTRIBUTE_KEYWORD(severity, "Severity", severity_level)
 
 void on_wait(boost::system::error_code error_code, std::shared_ptr<boost::asio::steady_timer> timer)
 {
