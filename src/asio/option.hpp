@@ -42,6 +42,7 @@ public:
 
     boost::optional<std::string> address;
     boost::optional<uint16_t> port;
+    boost::optional<uint32_t> timeout;
 
     void parse(int argc, char* argv[], const filesystem::path& path) FEATURE_OVERRIDE
     {
@@ -49,6 +50,7 @@ public:
         options_description.add_options()
             ("address", boost::program_options::value<std::string>())
             ("port", boost::program_options::value<uint16_t>())
+            ("timeout", boost::program_options::value<uint32_t>())
             ;
 
         boost::program_options::variables_map variables_map;
@@ -64,6 +66,11 @@ public:
         if (variables_map.count("port"))
         {
             port = boost::make_optional(variables_map["port"].as<uint16_t>());
+        }
+
+        if (variables_map.count("timeout"))
+        {
+            timeout = boost::make_optional(variables_map["timeout"].as<uint32_t>());
         }
 
         if (!port || !address)

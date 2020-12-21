@@ -63,11 +63,9 @@ inline void asyncConnect(S& socket, E endpoint, F fn)
 }
 
 template<typename S, typename T, typename F>
-inline void asyncWait(S& socket, T t, F& fn)
+inline void asyncWait(S& socket, T& timer, F& fn)
 {
-    //fn.isTimer.reset(new bool(true));
-    fn.timer.reset(new boost::asio::steady_timer(socket.get_executor(), t));
-    fn.timer->async_wait([fn, &socket](boost::system::error_code error)
+    timer.async_wait([fn, &socket](boost::system::error_code error)
         {
             LOG(debug, "");
             if (error)
@@ -78,12 +76,8 @@ inline void asyncWait(S& socket, T t, F& fn)
                 }
                 return;
             }
-            //LOG(debug, "isTimer: %1%", *(fn.isTimer));
-            //if (*(fn.isTimer))
-            {
-                LOG(debug, "timeout!");
-                socket.close();
-                return;
-            }
+            LOG(debug, "timeout!");
+            socket.close();
+            return;
         });
 }

@@ -36,27 +36,15 @@ public:
     {
     }
 
-    void async_wait(std::function<void(boost::system::error_code, std::size_t)> handler)
-    {
-        timer->async_wait([handler](boost::system::error_code error_code)
-            {
-                handler(error_code, 0);
-            });
-    }
+    //void async_wait(std::function<void(boost::system::error_code, std::size_t)> handler)
+    //{
+    //    timer->async_wait([handler](boost::system::error_code error_code)
+    //        {
+    //            handler(error_code, 0);
+    //        });
+    //}
 
     void operator()(boost::system::error_code error = boost::system::error_code(), std::size_t bytes_transferred = 0);
-
-    //std::shared_ptr<bool> isTimer;
-
-    void stopTimer()
-    {
-        LOG(debug, "");
-        //*isTimer = false;
-        timer->cancel();
-    }
-
-    std::shared_ptr<boost::asio::steady_timer> timer;
-    std::shared_ptr<boost::asio::ip::tcp::socket> socket;
 
 private:
     boost::asio::ip::tcp::acceptor& acceptor;
@@ -68,9 +56,12 @@ private:
     std::shared_ptr<Header> header;
     std::shared_ptr<std::vector<char>> recv;
 
-    //boost::asio::io_context& io_context;
     OperatorType type;
     int flag = 0;
+
+    std::shared_ptr<boost::asio::steady_timer> timer;
+    std::shared_ptr<boost::asio::steady_timer> timerAll;
+    std::shared_ptr<boost::asio::ip::tcp::socket> socket;
 };
 
 void Server::operator()(boost::system::error_code error, std::size_t bytes_transferred)
@@ -94,10 +85,11 @@ void Server::operator()(boost::system::error_code error, std::size_t bytes_trans
             {
                 yield
                 {
-                    asyncWait(*socket, boost::asio::chrono::seconds(3), *this);
+                    timer.reset(new boost::asio::steady_timer(socket->get_executor(), boost::asio::chrono::seconds(3)));
+                    asyncWait(*socket, *timer, *this);
                     asyncRead(*socket, header.get(), sizeof(*header), offset, *this);
                 }
-                stopTimer();
+                timer->cancel();
                 offset += bytes_transferred;
             } while (offset < sizeof(*header));
 
@@ -109,10 +101,11 @@ void Server::operator()(boost::system::error_code error, std::size_t bytes_trans
             {
                 yield
                 {
-                    asyncWait(*socket, boost::asio::chrono::seconds(3), *this);
+                    timer.reset(new boost::asio::steady_timer(socket->get_executor(), boost::asio::chrono::seconds(3)));
+                    asyncWait(*socket, *timer, *this);
                     asyncRead(*socket, recv->data(), header->bodyLength, offset, *this);
                 }
-                stopTimer();
+                timer->cancel();
                 offset += bytes_transferred;
             } while (offset < header->bodyLength);
 
@@ -131,15 +124,19 @@ void Server::operator()(boost::system::error_code error, std::size_t bytes_trans
             pack(*data, *send);
             header->bodyLength = static_cast<uint32_t>(send->size());
 
+            timerAll.reset(new boost::asio::steady_timer(socket->get_executor(), boost::asio::chrono::seconds(30)));
+            timerAll->wait();
+
             offset = 0;
             do
             {
                 yield
                 {
-                    asyncWait(*socket, boost::asio::chrono::seconds(3), *this);
+                    timer.reset(new boost::asio::steady_timer(socket->get_executor(), boost::asio::chrono::seconds(3)));
+                    asyncWait(*socket, *timer, *this);
                     asyncWrite(*socket, header.get(), sizeof(*header), offset, *this);
                 }
-                stopTimer();
+                timer->cancel();
                 offset += bytes_transferred;
             } while (offset < sizeof(*header));
 
@@ -148,10 +145,11 @@ void Server::operator()(boost::system::error_code error, std::size_t bytes_trans
             {
                 yield
                 {
-                    asyncWait(*socket, boost::asio::chrono::seconds(3), *this);
+                    timer.reset(new boost::asio::steady_timer(socket->get_executor(), boost::asio::chrono::seconds(3)));
+                    asyncWait(*socket, *timer, *this);
                     asyncWrite(*socket, send->c_str(), send->size(), offset, *this);
                 }
-                stopTimer();
+                timer->cancel();
                 offset += bytes_transferred;
             } while (offset < send->size());
 
@@ -173,58 +171,6 @@ filesystem::path execution_path()
     GetModuleFileNameA(NULL, fileName, sizeof(fileName));
     filesystem::path path(fileName);
     return path.parent_path();
-}
-
-void on_wait(boost::system::error_code error_code, std::shared_ptr<boost::asio::steady_timer> timer)
-{
-    if (error_code)
-    {
-        LOG(info, "%1%", error_code.message());
-    }
-    LOG(info, "timer out");
-    auto new_timer = std::make_shared<boost::asio::steady_timer>(timer->get_executor(), boost::asio::chrono::seconds(1));
-    new_timer->async_wait([new_timer](boost::system::error_code error_code)
-        {
-            on_wait(error_code, new_timer);
-        });
-}
-
-class Timer
-{
-public:
-    Timer(boost::asio::io_context& io_context_)
-        : io_context(io_context_)
-    {
-    }
-
-    ~Timer()
-    {
-    }
-
-    void operator()(boost::system::error_code error = boost::system::error_code());
-
-private:
-    boost::asio::coroutine coro;
-    boost::asio::io_context& io_context;
-    std::shared_ptr<boost::asio::steady_timer> timer;
-};
-
-void Timer::operator()(boost::system::error_code error)
-{
-
-    if (!error)
-    {
-        reenter(coro)
-        {
-            do
-            {
-                timer.reset(new boost::asio::steady_timer(io_context, boost::asio::chrono::seconds(1)));
-                yield timer->async_wait(*this);
-                LOG(info, "timer out");
-                fork Timer(*this)();
-            } while (coro.is_parent());
-        }
-    }
 }
 
 int main(int argc, char* argv[])
@@ -253,22 +199,7 @@ int main(int argc, char* argv[])
 
     {
         auto socket = std::make_shared<boost::asio::ip::tcp::socket>(io_context);
-        //Server(acceptor, socket)();
-        auto server = std::make_shared<Server>(acceptor, socket);
-        (*server)();
-    }
-
-    {
-        //auto timer = std::make_shared<boost::asio::steady_timer>(io_context, boost::asio::chrono::seconds(1));
-        //timer->async_wait([timer](boost::system::error_code error_code)
-        //    {
-        //        on_wait(error_code, timer);
-        //    });
-    }
-
-    {
-        //auto timer = std::make_shared<Timer>(io_context);
-        //(*timer)();
+        Server(acceptor, socket)();
     }
 
     io_context.run();

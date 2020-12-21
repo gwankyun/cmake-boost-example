@@ -28,9 +28,11 @@ public:
     explicit Client(
         std::shared_ptr<boost::asio::ip::tcp::socket> socket_,
         std::string address_,
-        std::uint16_t port_
+        std::uint16_t port_,
+        boost::optional<std::uint32_t> timeout_
     )
         : socket(socket_), address(address_), port(port_)
+        , timeout(timeout_)
     {
     }
 
@@ -39,28 +41,21 @@ public:
     }
 
     void operator()(boost::system::error_code error = boost::system::error_code(), std::size_t bytes_transferred = 0);
-    //std::shared_ptr<bool> isTimer;
-
-    void stopTimer()
-    {
-        LOG(debug, "");
-        //*isTimer = false;
-        timer->cancel();
-    }
-
-    std::shared_ptr<boost::asio::ip::tcp::socket> socket;
-    std::shared_ptr<boost::asio::steady_timer> timer;
 
 private:
     std::shared_ptr<Data> data;
     std::string address;
     std::uint16_t port;
+    boost::optional<std::uint32_t> timeout;
     boost::asio::coroutine coro;
 
     std::size_t offset = 0;
     std::shared_ptr<std::string> send;
     std::shared_ptr<Header> header;
     std::shared_ptr<std::vector<char>> recv;
+
+    std::shared_ptr<boost::asio::ip::tcp::socket> socket;
+    std::shared_ptr<boost::asio::steady_timer> timer;
 };
 
 void Client::operator()(boost::system::error_code error, std::size_t bytes_transferred)
@@ -71,15 +66,15 @@ void Client::operator()(boost::system::error_code error, std::size_t bytes_trans
         {
             yield
             {
-                asyncWait(*socket, boost::asio::chrono::seconds(3), *this);
+                timer.reset(new boost::asio::steady_timer(socket->get_executor(), boost::asio::chrono::seconds(3)));
+                asyncWait(*socket, *timer, *this);
                 asyncConnect(
                     *socket,
                     boost::asio::ip::tcp::endpoint(
                         boost::asio::ip::make_address(address),
                         port), *this);
             }
-
-            stopTimer();
+            timer->cancel();
 
             // async_write_some
             header.reset(new Header());
@@ -97,10 +92,11 @@ void Client::operator()(boost::system::error_code error, std::size_t bytes_trans
             {
                 yield
                 {
-                    asyncWait(*socket, boost::asio::chrono::seconds(3), *this);
+                    timer.reset(new boost::asio::steady_timer(socket->get_executor(), boost::asio::chrono::seconds(3)));
+                    asyncWait(*socket, *timer, *this);
                     asyncWrite(*socket, header.get(), sizeof(*header), offset, *this);
                 }
-                stopTimer();
+                timer->cancel();
                 offset += bytes_transferred;
             } while (offset < sizeof(*header));
 
@@ -109,10 +105,11 @@ void Client::operator()(boost::system::error_code error, std::size_t bytes_trans
             {
                 yield
                 {
-                    asyncWait(*socket, boost::asio::chrono::seconds(3), *this);
+                    timer.reset(new boost::asio::steady_timer(socket->get_executor(), boost::asio::chrono::seconds(3)));
+                    asyncWait(*socket, *timer, *this);
                     asyncWrite(*socket, send->c_str(), send->size(), offset, *this);
                 }
-                stopTimer();
+                timer->cancel();
                 offset += bytes_transferred;
             } while (offset < send->size());
 
@@ -126,10 +123,11 @@ void Client::operator()(boost::system::error_code error, std::size_t bytes_trans
             {
                 yield
                 {
-                    asyncWait(*socket, boost::asio::chrono::seconds(3), *this);
+                    timer.reset(new boost::asio::steady_timer(socket->get_executor(), boost::asio::chrono::seconds(3)));
+                    asyncWait(*socket, *timer, *this);
                     asyncRead(*socket, header.get(), sizeof(*header), offset, *this);
                 }
-                stopTimer();
+                timer->cancel();
                 offset += bytes_transferred;
             } while (offset < sizeof(*header));
 
@@ -140,10 +138,11 @@ void Client::operator()(boost::system::error_code error, std::size_t bytes_trans
             {
                 yield
                 {
-                    asyncWait(*socket, boost::asio::chrono::seconds(3), *this);
+                    timer.reset(new boost::asio::steady_timer(socket->get_executor(), boost::asio::chrono::seconds(3)));
+                    asyncWait(*socket, *timer, *this);
                     asyncRead(*socket, recv->data(), header->bodyLength, offset, *this);
                 }
-                stopTimer();
+                timer->cancel();
                 offset += bytes_transferred;
             } while (offset < header->bodyLength);
 
@@ -195,7 +194,7 @@ int main(int argc, char* argv[])
 
     {
         auto socket = std::make_shared<boost::asio::ip::tcp::socket>(io_context);
-        Client(socket, *option.address, *option.port)();
+        Client(socket, *option.address, *option.port, option.timeout)();
     }
 
     io_context.run();

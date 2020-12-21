@@ -6,27 +6,27 @@
 #include <boost/preprocessor.hpp>
 
 #ifndef BOOST_PP_REPEAT_Z
-#define BOOST_PP_REPEAT_Z(z) BOOST_PP_REPEAT_##z
+#  define BOOST_PP_REPEAT_Z(z) BOOST_PP_REPEAT_##z
 #endif // !BOOST_PP_REPEAT_Z
 
 #ifndef BOOST_PP_REPEAT_FROM_TO_Z
-#define BOOST_PP_REPEAT_FROM_TO_Z(z) BOOST_PP_REPEAT_FROM_TO_##z
+#  define BOOST_PP_REPEAT_FROM_TO_Z(z) BOOST_PP_REPEAT_FROM_TO_##z
 #endif // !BOOST_PP_REPEAT_FROM_TO_Z
 
 #ifndef BOOST_TYPENAME
-#define BOOST_TYPENAME(z, n, x) BOOST_PP_COMMA_IF(n) typename x##n
+#  define BOOST_TYPENAME(z, n, x) BOOST_PP_COMMA_IF(n) typename x##n
 #endif // !BOOST_TYPENAME
 
 #ifndef BOOST_PARAMETER
-#define BOOST_PARAMETER(z, n, x) BOOST_PP_COMMA_IF(n) x##n x##n##_
+#  define BOOST_PARAMETER(z, n, x) BOOST_PP_COMMA_IF(n) x##n x##n##_
 #endif // !BOOST_PARAMETER
 
 #ifndef BOOST_ARGUMENT
-#define BOOST_ARGUMENT(z, n, x) % x##n##_
+#  define BOOST_ARGUMENT(z, n, x) % x##n##_
 #endif // !BOOST_ARGUMENT
 
 #ifndef REPEAT_BLOG
-#define REPEAT_BLOG(z, n, _) \
+#  define REPEAT_BLOG(z, n, _) \
     template<BOOST_PP_REPEAT_Z(z)(n, BOOST_TYPENAME, T)> \
     inline void blog(boost::log::trivial::severity_level level, std::string info, std::string fmt, BOOST_PP_REPEAT_Z(z)(n, BOOST_PARAMETER, T)) \
     { \
