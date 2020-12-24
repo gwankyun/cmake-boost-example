@@ -1,12 +1,15 @@
 #pragma once
+
 #ifdef __cpp_lib_filesystem
-#include <filesystem>
+#  include <filesystem>
 namespace filesystem = std::filesystem;
 #else
-#include <boost/filesystem.hpp>
+#  include <boost/filesystem.hpp>
 namespace filesystem = boost::filesystem;
 #endif // __cpp_lib_filesystem
+
 #include <boost/optional.hpp>
+
 #include <boost/program_options.hpp>
 #include "compiler_detection.h"
 

@@ -54,6 +54,7 @@ private:
     std::size_t offset = 0;
     std::shared_ptr<std::string> send;
     std::shared_ptr<Header> header;
+    std::shared_ptr<Checksum> checksum;
     std::shared_ptr<std::vector<char>> recv;
 
     OperatorType type;
@@ -95,6 +96,26 @@ void Server::operator()(boost::system::error_code error, std::size_t bytes_trans
 
             LOG(debug, "length: %1%", header->bodyLength);
 
+            checksum.reset(new Checksum());
+            offset = 0;
+            do
+            {
+                yield
+                {
+                    timer.reset(new boost::asio::steady_timer(socket->get_executor(), boost::asio::chrono::seconds(3)));
+                    asyncWait(*socket, *timer, *this);
+                    asyncRead(*socket, checksum.get(), sizeof(*checksum), offset, *this);
+                }
+                timer->cancel();
+                offset += bytes_transferred;
+            } while (offset < sizeof(*checksum));
+
+            if (checksum->header != crc(header.get(), sizeof(*header)))
+            {
+                LOG(error, "header crc error!");
+                return;
+            }
+
             recv.reset(new std::vector<char>(header->bodyLength + 1, '\0'));
             offset = 0;
             do
@@ -109,11 +130,27 @@ void Server::operator()(boost::system::error_code error, std::size_t bytes_trans
                 offset += bytes_transferred;
             } while (offset < header->bodyLength);
 
+            if (checksum->body != crc(recv->data(), header->bodyLength))
+            {
+                LOG(error, "body crc error!");
+                return;
+            }
+
             data.reset(new Data());
             unpack(recv->data(), *data);
 
             LOG(info, "uuid: %1%", data->uuid);
             LOG(info, "message: %1%", data->message);
+
+            LOG(debug, "bodyMajorType: %1%", header->bodyMajorType);
+            if (header->bodyMajorType == 0x01)
+            {
+                timerAll.reset(
+                    new boost::asio::steady_timer(
+                        socket->get_executor(),
+                        boost::asio::chrono::seconds(header->bodyMinorType)));
+                timerAll->wait();
+            }
 
             // async_write_some
             header.reset(new Header());
@@ -123,9 +160,9 @@ void Server::operator()(boost::system::error_code error, std::size_t bytes_trans
             send.reset(new std::string());
             pack(*data, *send);
             header->bodyLength = static_cast<uint32_t>(send->size());
-
-            timerAll.reset(new boost::asio::steady_timer(socket->get_executor(), boost::asio::chrono::seconds(30)));
-            timerAll->wait();
+            checksum.reset(new Checksum());
+            checksum->header = crc(header.get(), sizeof(*header));
+            checksum->body = crc(send->c_str(), send->size());
 
             offset = 0;
             do
@@ -139,6 +176,19 @@ void Server::operator()(boost::system::error_code error, std::size_t bytes_trans
                 timer->cancel();
                 offset += bytes_transferred;
             } while (offset < sizeof(*header));
+
+            offset = 0;
+            do
+            {
+                yield
+                {
+                    timer.reset(new boost::asio::steady_timer(socket->get_executor(), boost::asio::chrono::seconds(3)));
+                    asyncWait(*socket, *timer, *this);
+                    asyncWrite(*socket, checksum.get(), sizeof(*checksum), offset, *this);
+                }
+                timer->cancel();
+                offset += bytes_transferred;
+            } while (offset < sizeof(*checksum));
 
             offset = 0;
             do

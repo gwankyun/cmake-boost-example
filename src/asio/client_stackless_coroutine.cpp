@@ -52,6 +52,7 @@ private:
     std::size_t offset = 0;
     std::shared_ptr<std::string> send;
     std::shared_ptr<Header> header;
+    std::shared_ptr<Checksum> checksum;
     std::shared_ptr<std::vector<char>> recv;
 
     std::shared_ptr<boost::asio::ip::tcp::socket> socket;
@@ -79,11 +80,25 @@ void Client::operator()(boost::system::error_code error, std::size_t bytes_trans
             // async_write_some
             header.reset(new Header());
             initialize(*header);
+            if (timeout)
+            {
+                LOG(debug, "yes timeout");
+                header->bodyMajorType = 0x01;
+                header->bodyMinorType = *timeout;
+            }
+            else
+            {
+                LOG(debug, "no timeout");
+            }
             data.reset(new Data());
             data->message = "client.";
             send.reset(new std::string());
+            checksum.reset(new Checksum());
             pack(*data, *send);
             header->bodyLength = static_cast<uint32_t>(send->size());
+            checksum->header = crc(header.get(), sizeof(*header));
+            checksum->body = crc(send->c_str(), send->size());
+            LOG(debug, "header: %1% body: %2%", checksum->header, checksum->body);
 
             LOG(debug, "header: %1% data: %2%", sizeof(*header), header->bodyLength);
 
@@ -107,6 +122,19 @@ void Client::operator()(boost::system::error_code error, std::size_t bytes_trans
                 {
                     timer.reset(new boost::asio::steady_timer(socket->get_executor(), boost::asio::chrono::seconds(3)));
                     asyncWait(*socket, *timer, *this);
+                    asyncWrite(*socket, checksum.get(), sizeof(*checksum), offset, *this);
+                }
+                timer->cancel();
+                offset += bytes_transferred;
+            } while (offset < sizeof(*checksum));
+
+            offset = 0;
+            do
+            {
+                yield
+                {
+                    timer.reset(new boost::asio::steady_timer(socket->get_executor(), boost::asio::chrono::seconds(3)));
+                    asyncWait(*socket, *timer, *this);
                     asyncWrite(*socket, send->c_str(), send->size(), offset, *this);
                 }
                 timer->cancel();
@@ -117,7 +145,6 @@ void Client::operator()(boost::system::error_code error, std::size_t bytes_trans
 
             // async_read_some
             header.reset(new Header());
-
             offset = 0;
             do
             {
@@ -131,8 +158,27 @@ void Client::operator()(boost::system::error_code error, std::size_t bytes_trans
                 offset += bytes_transferred;
             } while (offset < sizeof(*header));
 
-            recv.reset(new std::vector<char>(header->bodyLength + 1, '\0'));
+            checksum.reset(new Checksum());
+            offset = 0;
+            do
+            {
+                yield
+                {
+                    timer.reset(new boost::asio::steady_timer(socket->get_executor(), boost::asio::chrono::seconds(3)));
+                    asyncWait(*socket, *timer, *this);
+                    asyncRead(*socket, checksum.get(), sizeof(*checksum), offset, *this);
+                }
+                timer->cancel();
+                offset += bytes_transferred;
+            } while (offset < sizeof(*checksum));
 
+            if (checksum->header != crc(header.get(), sizeof(*header)))
+            {
+                LOG(error, "header crc error!");
+                return;
+            }
+
+            recv.reset(new std::vector<char>(header->bodyLength + 1, '\0'));
             offset = 0;
             do
             {
@@ -145,6 +191,12 @@ void Client::operator()(boost::system::error_code error, std::size_t bytes_trans
                 timer->cancel();
                 offset += bytes_transferred;
             } while (offset < header->bodyLength);
+            
+            if (checksum->body != crc(recv->data(), header->bodyLength))
+            {
+                LOG(error, "body crc error!");
+                return;
+            }
 
             data.reset(new Data());
             unpack(recv->data(), *data);

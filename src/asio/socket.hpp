@@ -1,19 +1,33 @@
-#pragma once
+ï»¿#pragma once
 #include <cstdint> // std::uint32_t
 #include <cstring> // memset
 #include <boost/asio/yield.hpp>
 #include <boost/asio.hpp>
+#include <boost/crc.hpp>
+
+inline uint32_t crc(const void* data, std::size_t len)
+{
+    boost::crc_32_type crc_;
+    crc_.process_bytes(data, len);
+    return crc_.checksum();
+}
 
 struct Header
 {
-    char sign[4]; // 4‚€@±íÊ¾°üî^
-    std::uint16_t headerLength; // °üî^éL
-    std::uint16_t headerType; // °üî^îĞÍ£¬Ä¬ÕJ0£¬éÍØÕ¹¶øÁô
-    std::uint32_t headerChecksum; // °üî^Ğ£òºÍ
-    std::uint32_t bodyLength; // °üówéL
-    std::uint16_t bodyMajorType; // °üówÖ÷îĞÍ£¬ºÍbodyMinorTypeÅäºÏ˜Ë×R°üówµÄ”µ“şîĞÍ
-    std::uint16_t bodyMinorType; // °üów´ÎîĞÍ
-    std::uint32_t bodyChecksum; // °üî^Ğ£òºÍ
+    char sign[4]; // 4å€‹@è¡¨ç¤ºåŒ…é ­
+    std::uint16_t headerLength; // åŒ…é ­é•·
+    std::uint16_t headerType; // åŒ…é ­é¡å‹ï¼Œé»˜èª0ï¼Œç‚ºæ‹“å±•è€Œç•™
+    //std::uint32_t headerChecksum; // åŒ…é ­æ ¡é©—å’Œ
+    std::uint32_t bodyLength; // åŒ…é«”é•·
+    std::uint16_t bodyMajorType; // åŒ…é«”ä¸»é¡å‹ï¼Œå’ŒbodyMinorTypeé…åˆæ¨™è­˜åŒ…é«”çš„æ•¸æ“šé¡å‹
+    std::uint16_t bodyMinorType; // åŒ…é«”æ¬¡é¡å‹
+    //std::uint32_t bodyChecksum; // åŒ…é ­æ ¡é©—å’Œ
+};
+
+struct Checksum
+{
+    std::uint32_t header;
+    std::uint32_t body;
 };
 
 inline void initialize(Header& header)
@@ -21,11 +35,11 @@ inline void initialize(Header& header)
     memset(header.sign, '@', sizeof(header.sign));
     header.headerLength = sizeof(header);
     header.headerType = 0;
-    header.headerChecksum = 0;
+    //header.headerChecksum = 0;
     header.bodyLength = 0;
     header.bodyMajorType = 0;
     header.bodyMinorType = 0;
-    header.bodyChecksum = 0;
+    //header.bodyChecksum = 0;
 }
 
 inline boost::asio::BOOST_ASIO_CONST_BUFFER writeBuffer(const void* data, std::size_t size_in_bytes, std::size_t offset)
