@@ -1,4 +1,4 @@
-ï»¿#pragma once
+#pragma once
 #include <cstdint> // std::uint32_t
 #include <cstring> // memset
 #include <boost/asio/yield.hpp>
@@ -14,14 +14,14 @@ inline uint32_t crc(const void* data, std::size_t len)
 
 struct Header
 {
-    char sign[4]; // 4å€‹@è¡¨ç¤ºåŒ…é ­
-    std::uint16_t headerLength; // åŒ…é ­é•·
-    std::uint16_t headerType; // åŒ…é ­é¡å‹ï¼Œé»˜èª0ï¼Œç‚ºæ‹“å±•è€Œç•™
-    //std::uint32_t headerChecksum; // åŒ…é ­æ ¡é©—å’Œ
-    std::uint32_t bodyLength; // åŒ…é«”é•·
-    std::uint16_t bodyMajorType; // åŒ…é«”ä¸»é¡å‹ï¼Œå’ŒbodyMinorTypeé…åˆæ¨™è­˜åŒ…é«”çš„æ•¸æ“šé¡å‹
-    std::uint16_t bodyMinorType; // åŒ…é«”æ¬¡é¡å‹
-    //std::uint32_t bodyChecksum; // åŒ…é ­æ ¡é©—å’Œ
+    char sign[4]; // 4‚€@±íÊ¾°üî^
+    std::uint16_t headerLength; // °üî^éL
+    std::uint16_t headerType; // °üî^îĞÍ£¬Ä¬ÕJ0£¬éÍØÕ¹¶øÁô
+    //std::uint32_t headerChecksum; // °üî^Ğ£òºÍ
+    std::uint32_t bodyLength; // °üówéL
+    std::uint16_t bodyMajorType; // °üówÖ÷îĞÍ£¬ºÍbodyMinorTypeÅäºÏ˜Ë×R°üówµÄ”µ“şîĞÍ
+    std::uint16_t bodyMinorType; // °üów´ÎîĞÍ
+    //std::uint32_t bodyChecksum; // °üî^Ğ£òºÍ
 };
 
 struct Checksum

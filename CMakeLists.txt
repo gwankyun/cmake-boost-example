@@ -198,6 +198,8 @@ else()
   set(cxx_std cxx_std_11)
 endif()
 
+target_compile_features(${main} PRIVATE ${cxx_std})
+
 set(asio_sources
   src/asio/buffer.hpp
   src/asio/log.hpp
