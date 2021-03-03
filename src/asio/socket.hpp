@@ -5,7 +5,7 @@
 #include <boost/asio.hpp>
 #include <boost/crc.hpp>
 
-inline uint32_t crc(const void* data, std::size_t len)
+inline std::uint32_t crc32(const void* data, std::size_t len)
 {
     boost::crc_32_type crc_;
     crc_.process_bytes(data, len);

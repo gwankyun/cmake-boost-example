@@ -18,7 +18,7 @@
 #include "log.hpp"
 #include "option.hpp"
 #include "client.h"
-#include "compiler_detection.h"
+//#include "compiler_detection.h"
 #include "data.h"
 #include "socket.hpp"
 
@@ -96,8 +96,8 @@ void Client::operator()(boost::system::error_code error, std::size_t bytes_trans
             checksum.reset(new Checksum());
             pack(*data, *send);
             header->bodyLength = static_cast<uint32_t>(send->size());
-            checksum->header = crc(header.get(), sizeof(*header));
-            checksum->body = crc(send->c_str(), send->size());
+            checksum->header = crc32(header.get(), sizeof(*header));
+            checksum->body = crc32(send->c_str(), send->size());
             LOG(debug, "header: %1% body: %2%", checksum->header, checksum->body);
 
             LOG(debug, "header: %1% data: %2%", sizeof(*header), header->bodyLength);
@@ -172,7 +172,7 @@ void Client::operator()(boost::system::error_code error, std::size_t bytes_trans
                 offset += bytes_transferred;
             } while (offset < sizeof(*checksum));
 
-            if (checksum->header != crc(header.get(), sizeof(*header)))
+            if (checksum->header != crc32(header.get(), sizeof(*header)))
             {
                 LOG(error, "header crc error!");
                 return;
@@ -192,7 +192,7 @@ void Client::operator()(boost::system::error_code error, std::size_t bytes_trans
                 offset += bytes_transferred;
             } while (offset < header->bodyLength);
             
-            if (checksum->body != crc(recv->data(), header->bodyLength))
+            if (checksum->body != crc32(recv->data(), header->bodyLength))
             {
                 LOG(error, "body crc error!");
                 return;

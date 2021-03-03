@@ -12,7 +12,7 @@
 #include "log.hpp"
 #include "option.hpp"
 #include "client.h"
-#include "compiler_detection.h"
+//#include "compiler_detection.h"
 #include "data.h"
 
 void on_read(

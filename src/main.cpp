@@ -16,11 +16,11 @@
 
 namespace outcome = BOOST_OUTCOME_V2_NAMESPACE;
 
-inline uint32_t crc(const void* data, std::size_t len)
+inline uint32_t crc32(const void* data, std::size_t length)
 {
-    boost::crc_32_type crc_;
-    crc_.process_bytes(data, len);
-    return crc_.checksum();
+    boost::crc_32_type crc;
+    crc.process_bytes(data, length);
+    return crc.checksum();
 }
 
 enum Div
@@ -150,19 +150,9 @@ void funcInfo(F f)
     LOG(info, std::is_same_v<typename boost::result_of<F()>::type, void_t::type>);
 }
 
-template<typename F, typename T>
-typename boost::enable_if_<
-    !boost::is_same<typename boost::result_of<F(T)>::type, typename void_t::type>::value,
-    typename boost::result_of<F(T)>::type
->::type apply(F fn, T value)
-{
-    return f(value);
-}
-
 //template<typename F, typename T>
-//typename boost::conditional<
-//    boost::is_same<typename boost::result_of<F(T)>::type, typename void_t::type>::value,
-//    typename void_t::type,
+//typename boost::enable_if_<
+//    !boost::is_same<typename boost::result_of<F(T)>::type, typename void_t::type>::value,
 //    typename boost::result_of<F(T)>::type
 //>::type apply(F fn, T value)
 //{
@@ -170,13 +160,23 @@ typename boost::enable_if_<
 //}
 
 template<typename F, typename T>
-typename boost::enable_if_<
+typename boost::conditional<
     boost::is_same<typename boost::result_of<F(T)>::type, typename void_t::type>::value,
-    typename void_t::type
+    typename void_t::type,
+    typename boost::result_of<F(T)>::type
 >::type apply(F fn, T value)
 {
-    f(value);
+    return f(value);
 }
+
+//template<typename F, typename T>
+//typename boost::enable_if_<
+//    boost::is_same<typename boost::result_of<F(T)>::type, typename void_t::type>::value,
+//    typename void_t::type
+//>::type apply(F fn, T value)
+//{
+//    f(value);
+//}
 
 //template<typename F, typename T>
 //void apply(F fn, T value)
@@ -218,9 +218,9 @@ int main()
     LOG(info, "hex: %1%", hex(str.begin(), str.end()));
     LOG(info, "hex: %1%", hex_n(str.begin(), str.size()));
 
-    boost::crc_32_type crc;
-    crc.process_bytes(str.c_str(), str.size());
-    LOG(info, "crc: %1%", crc.checksum());
+    auto crc = crc32(str.c_str(), str.size());
+    LOG(info, "crc: %1%", crc);
+
     LOG(info, "log: %1%", 1);
     LOG(info, "log: %1% %2%", 1, 2);
     LOG(info, "log: %1% %2% %3%", 1, 2, 3);
@@ -245,11 +245,11 @@ int main()
 
     funcInfo(type_index::test);
 
-    std::cout << apply(f, 0) << std::endl;
-    apply(g, 0);
+    //std::cout << apply(f, 0) << std::endl;
+    //apply(g, 0);
 
-    LOG(info, std::apply(f, std::make_tuple(0)));
-    std::apply(g, std::make_tuple(0));
+    //LOG(info, std::apply(f, std::make_tuple(0)));
+    //std::apply(g, std::make_tuple(0));
 
     return 0;
 }

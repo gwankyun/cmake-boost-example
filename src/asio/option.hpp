@@ -11,7 +11,9 @@ namespace filesystem = boost::filesystem;
 #include <boost/optional.hpp>
 
 #include <boost/program_options.hpp>
-#include "compiler_detection.h"
+//#include "compiler_detection.h"
+
+#include <boost/config.hpp>
 
 class OptionBase
 {
@@ -47,7 +49,7 @@ public:
     boost::optional<uint16_t> port;
     boost::optional<uint32_t> timeout;
 
-    void parse(int argc, char* argv[], const filesystem::path& path) FEATURE_OVERRIDE
+    void parse(int argc, char* argv[], const filesystem::path& path) BOOST_OVERRIDE
     {
         boost::program_options::options_description options_description;
         options_description.add_options()
