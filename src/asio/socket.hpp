@@ -1,15 +1,16 @@
 #pragma once
 #include <cstdint> // std::uint32_t
 #include <cstring> // memset
-#include <boost/asio/yield.hpp>
+//#include <boost/asio/yield.hpp>
 #include <boost/asio.hpp>
-#include <boost/crc.hpp>
+//#include <boost/crc.hpp>
 
 inline std::uint32_t crc32(const void* data, std::size_t len)
 {
-    boost::crc_32_type crc_;
-    crc_.process_bytes(data, len);
-    return crc_.checksum();
+    //boost::crc_32_type crc_;
+    //crc_.process_bytes(data, len);
+    //return crc_.checksum();
+    return 0;
 }
 
 struct Header

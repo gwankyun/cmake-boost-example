@@ -9,6 +9,13 @@ struct Data
     std::string uuid;
 };
 
+enum struct DataState
+{
+    Full = 1,
+    Part,
+    Error
+};
+
 namespace boost
 {
     namespace serialization
@@ -25,8 +32,8 @@ namespace boost
 
 void pack(const Data& data, Buffer& buffer);
 
-bool unpack(const Buffer& buffer, Data& data);
+DataState unpack(const Buffer& buffer, Data& data);
 
 void pack(const Data& data, std::string& buffer);
 
-void unpack(const std::string& buffer, Data& data);
+bool unpack(const std::string& buffer, Data& data);

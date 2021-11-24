@@ -6,18 +6,22 @@
 #include <boost/system/error_code.hpp>
 #include "buffer.hpp"
 
+namespace asio = boost::asio;
+using error_code_t = boost::system::error_code;
+using socket_t = asio::ip::tcp::socket;
+
 void on_read(
-    boost::system::error_code error,
+    error_code_t error,
     std::size_t bytes_transferred,
-    std::shared_ptr<boost::asio::ip::tcp::socket> socket,
+    std::shared_ptr<socket_t> socket,
     std::shared_ptr<Buffer> buffer);
 
 void on_write(
-    boost::system::error_code error,
+    error_code_t error,
     std::size_t bytes_transferred,
-    std::shared_ptr<boost::asio::ip::tcp::socket> socket,
+    std::shared_ptr<socket_t> socket,
     std::shared_ptr<Buffer> buffer);
 
 void on_connect(
-    boost::system::error_code error,
-    std::shared_ptr<boost::asio::ip::tcp::socket> socket);
+    error_code_t error,
+    std::shared_ptr<socket_t> socket);
