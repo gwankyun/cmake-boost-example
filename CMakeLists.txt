@@ -18,6 +18,7 @@ option(Boost_DEBUG "" OFF) # Boost調試
 option(Boost_USE_STATIC_LIBS "" ON) # 使用靜態庫
 option(Boost_USE_STATIC_RUNTIME "" OFF) # 運行時靜態庫
 option(USE_CXX_STD_17 "" ON) # 使用C++17
+option(Boost_NO_WARN_NEW_VERSIONS "" ON) # 啟用新Boost不報警告
 
 function(get_win32_winnt version)
   if(WIN32)
@@ -144,10 +145,10 @@ set(asio_include_directories include ${Boost_INCLUDE_DIRS})
 
 set(data data)
 add_library(${data})
-set_target_properties(${data} PROPERTIES FOLDER ${asio})
 target_sources(${data} PRIVATE
   src/asio/data.cpp
   src/asio/data.h)
+set_target_properties(${data} PROPERTIES FOLDER ${asio})
 target_link_libraries(${data} Boost::serialization)
 target_compile_options(${data} PRIVATE ${compiler_options})
 target_compile_features(${data} PRIVATE ${cxx_std})
@@ -156,50 +157,38 @@ set(asio_libraries Boost::log Boost::program_options ${data})
 
 set(server server)
 add_executable(${server})
-set_target_properties(${server} PROPERTIES FOLDER ${asio})
 target_sources(${server} PRIVATE
   src/asio/server.cpp
   src/asio/server.h
   ${asio_sources})
-target_include_directories(${server} PRIVATE ${asio_include_directories})
-target_link_libraries(${server} PUBLIC ${asio_libraries})
-target_compile_options(${server} PRIVATE ${compiler_options})
-target_compile_features(${server} PRIVATE ${cxx_std})
 
 set(client client)
 add_executable(${client})
-set_target_properties(${client} PROPERTIES FOLDER ${asio})
 target_sources(${client} PRIVATE
   src/asio/client.cpp
   src/asio/client.h
   ${asio_sources})
-target_include_directories(${client} PRIVATE ${asio_include_directories})
-target_link_libraries(${client} ${asio_libraries})
-target_compile_options(${client} PRIVATE ${compiler_options})
-target_compile_features(${client} PRIVATE ${cxx_std})
 
 ## 協程
 set(server_stackless_coroutine server_stackless_coroutine)
 add_executable(${server_stackless_coroutine})
-set_target_properties(${server_stackless_coroutine} PROPERTIES FOLDER ${asio})
 target_sources(${server_stackless_coroutine} PRIVATE
   src/asio/server_stackless_coroutine.cpp
   ${asio_sources})
-target_include_directories(${server_stackless_coroutine} PRIVATE ${asio_include_directories})
-target_link_libraries(${server_stackless_coroutine} ${asio_libraries})
-target_compile_options(${server_stackless_coroutine} PRIVATE ${compiler_options})
-target_compile_features(${server_stackless_coroutine} PRIVATE ${cxx_std})
 
 set(client_stackless_coroutine client_stackless_coroutine)
 add_executable(${client_stackless_coroutine})
-set_target_properties(${client_stackless_coroutine} PROPERTIES FOLDER ${asio})
 target_sources(${client_stackless_coroutine} PRIVATE
   src/asio/client_stackless_coroutine.cpp
   ${asio_sources})
-target_include_directories(${client_stackless_coroutine} PRIVATE ${asio_include_directories})
-target_link_libraries(${client_stackless_coroutine} ${asio_libraries})
-target_compile_options(${client_stackless_coroutine} PRIVATE ${compiler_options})
-target_compile_features(${client_stackless_coroutine} PRIVATE ${cxx_std})
+
+foreach(i IN LISTS ${server} ${client} ${server_stackless_coroutine} ${client_stackless_coroutine})
+  set_target_properties(${i} PROPERTIES FOLDER ${asio})
+  target_include_directories(${i} PRIVATE ${asio_include_directories})
+  target_link_libraries(${i} PUBLIC ${asio_libraries})
+  target_compile_options(${i} PRIVATE ${compiler_options})
+  target_compile_features(${i} PRIVATE ${cxx_std})
+endforeach()
 
 set(preprocessor preprocessor)
 add_executable(${preprocessor})
