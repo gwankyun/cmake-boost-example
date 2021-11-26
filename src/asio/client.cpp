@@ -1,41 +1,14 @@
 #include <cstdint> // std::uint16_t std::uint32_t
 #include <string>
 #define BOOST_ASIO_NO_DEPRECATED 1
-#include <boost/asio.hpp>
-#include <boost/system/error_code.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/optional.hpp>
 #include <boost/program_options.hpp>
-#include <log.hpp>
-#include "buffer.hpp"
+#include "common.h"
 #include "option.hpp"
 #include "client.h"
-#include "data.h"
-
-namespace asio = boost::asio;
-using error_code_t = boost::system::error_code;
-using socket_t = asio::ip::tcp::socket;
-
-template<>
-inline std::string to_string(error_code_t error)
-{
-    return (boost::format("{ value: %1% message: %2% }") % error.value() % error.message()).str();
-}
-
-template<>
-inline std::string to_string(asio::ip::tcp::endpoint remote_endpoint)
-{
-    return (boost::format("{ %1%:%2% }") % remote_endpoint.address().to_string() % remote_endpoint.port()).str();
-}
-
-inline void on_error(error_code_t error, const socket_t& socket)
-{
-    LOG_DBG(error, error);
-    auto remote_endpoint = socket.remote_endpoint();
-    LOG_DBG(error, remote_endpoint);
-}
 
 void on_read(
     error_code_t error,
@@ -128,7 +101,7 @@ void on_connect(
 
     socket->async_write_some(
         buffer->write(2),
-        [socket, buffer](boost::system::error_code error, std::size_t bytes_transferred)
+        [socket, buffer](error_code_t error, std::size_t bytes_transferred)
         {
             on_write(error, bytes_transferred, socket, buffer);
         });

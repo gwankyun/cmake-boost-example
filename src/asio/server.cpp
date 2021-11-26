@@ -5,22 +5,11 @@
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/optional.hpp>
 #include <boost/program_options.hpp>
+#include "common.h"
 #include "server.h"
-#include <log.hpp>
 #include "option.hpp"
-#include "data.h"
 
-namespace asio = boost::asio;
-using error_code_t = boost::system::error_code;
-using socket_t = asio::ip::tcp::socket;
 using acceptor_t = asio::ip::tcp::acceptor;
-
-inline void on_error(error_code_t error, const socket_t& socket)
-{
-    LOG_FORMAT(debug, "value: %1% message: %2%") % error.value() % error.message();
-    auto remote_endpoint = socket.remote_endpoint();
-    LOG_FORMAT(debug, "close %1%:%2%") % remote_endpoint.address().to_string() % remote_endpoint.port();
-}
 
 void on_write(
     error_code_t error,
@@ -112,12 +101,12 @@ void on_accept(
 {
     if (error)
     {
-        LOG_FORMAT(debug, "value: %1% message: %2%") % error.value() % error.message();
+        LOG_DBG(error, error);
         return;
     }
 
     auto remote_endpoint = socket->remote_endpoint();
-    LOG_FORMAT(debug, "accept %1%:%2%") % remote_endpoint.address().to_string() % remote_endpoint.port();
+    LOG_DBG(debug, remote_endpoint);
 
     auto buffer = std::make_shared<Buffer>(1024);
 
