@@ -4,6 +4,7 @@
 #include <log.hpp>
 #include "buffer.hpp"
 #include "data.h"
+#include "option.hpp"
 
 namespace asio = boost::asio;
 using error_code_t = boost::system::error_code;
@@ -26,4 +27,12 @@ inline void on_error(error_code_t error, const socket_t& socket)
     LOG_DBG(error, error);
     auto remote_endpoint = socket.remote_endpoint();
     LOG_DBG(error, remote_endpoint);
+}
+
+inline filesystem::path execution_path()
+{
+    char fileName[MAX_PATH] = { '\0' };
+    GetModuleFileNameA(NULL, fileName, sizeof(fileName));
+    filesystem::path path(fileName);
+    return path.parent_path();
 }

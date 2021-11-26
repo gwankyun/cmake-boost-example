@@ -1,13 +1,8 @@
 #include <cstdint> // std::uint16_t std::uint32_t
 #include <string>
 #include <boost/algorithm/string.hpp>
-#include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/xml_parser.hpp>
-#include <boost/optional.hpp>
-#include <boost/program_options.hpp>
 #include "common.h"
 #include "server.h"
-#include "option.hpp"
 
 using acceptor_t = asio::ip::tcp::acceptor;
 
@@ -124,14 +119,6 @@ void on_accept(
         {
             on_accept(error, acceptor, newSocket);
         });
-}
-
-filesystem::path execution_path()
-{
-    char fileName[MAX_PATH] = { '\0' };
-    GetModuleFileNameA(NULL, fileName, sizeof(fileName));
-    filesystem::path path(fileName);
-    return path.parent_path();
 }
 
 int main(int argc, char* argv[])

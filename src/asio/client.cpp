@@ -2,12 +2,7 @@
 #include <string>
 #define BOOST_ASIO_NO_DEPRECATED 1
 #include <boost/algorithm/string.hpp>
-#include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/xml_parser.hpp>
-#include <boost/optional.hpp>
-#include <boost/program_options.hpp>
 #include "common.h"
-#include "option.hpp"
 #include "client.h"
 
 void on_read(
@@ -105,14 +100,6 @@ void on_connect(
         {
             on_write(error, bytes_transferred, socket, buffer);
         });
-}
-
-filesystem::path execution_path()
-{
-    char fileName[MAX_PATH] = { '\0' };
-    GetModuleFileNameA(NULL, fileName, sizeof(fileName));
-    filesystem::path path(fileName);
-    return path.parent_path();
 }
 
 int main(int argc, char* argv[])
