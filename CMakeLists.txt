@@ -71,7 +71,8 @@ endif()
 cmake_print_variables(Boost_USE_STATIC_LIBS)
 cmake_print_variables(Boost_USE_STATIC_RUNTIME)
 
-find_package(Boost REQUIRED COMPONENTS date_time filesystem log program_options serialization)
+find_package(Boost REQUIRED COMPONENTS date_time filesystem log program_options
+  serialization context coroutine)
 
 if(Boost_FOUND)
   cmake_print_variables(Boost_INCLUDE_DIRS)
@@ -91,7 +92,10 @@ set(main main)
 add_executable(${main})
 
 # 源文件
-target_sources(${main} PRIVATE src/main.cpp)
+target_sources(${main} PRIVATE
+  src/main.cpp
+  include/log.hpp
+)
 
 set(compiler_options
   "$<$<AND:$<CONFIG:Debug>,$<CXX_COMPILER_ID:MSVC>>:${runtime};/Od;/Ob0>;"
@@ -102,7 +106,7 @@ set(compiler_options
 target_compile_options(${main} PUBLIC ${compiler_options})
 
 # 庫目錄
-target_link_directories(${main} PRIVATE ${Boost_LIBRARY_DIRS})
+target_link_directories(${main} PRIVATE ${Boost_LIBRARY_DIRS} include)
 
 # 引用庫
 target_link_libraries(${main} Boost::filesystem Boost::log)
@@ -155,40 +159,7 @@ target_compile_features(${data} PRIVATE ${cxx_std})
 
 set(asio_libraries Boost::log Boost::program_options ${data})
 
-set(server server)
-add_executable(${server})
-target_sources(${server} PRIVATE
-  src/asio/server.cpp
-  src/asio/server.h
-  ${asio_sources})
-
-set(client client)
-add_executable(${client})
-target_sources(${client} PRIVATE
-  src/asio/client.cpp
-  src/asio/client.h
-  ${asio_sources})
-
-## 協程
-set(server_stackless_coroutine server_stackless_coroutine)
-add_executable(${server_stackless_coroutine})
-target_sources(${server_stackless_coroutine} PRIVATE
-  src/asio/server_stackless_coroutine.cpp
-  ${asio_sources})
-
-set(client_stackless_coroutine client_stackless_coroutine)
-add_executable(${client_stackless_coroutine})
-target_sources(${client_stackless_coroutine} PRIVATE
-  src/asio/client_stackless_coroutine.cpp
-  ${asio_sources})
-
-foreach(i IN LISTS ${server} ${client} ${server_stackless_coroutine} ${client_stackless_coroutine})
-  set_target_properties(${i} PROPERTIES FOLDER ${asio})
-  target_include_directories(${i} PRIVATE ${asio_include_directories})
-  target_link_libraries(${i} PUBLIC ${asio_libraries})
-  target_compile_options(${i} PRIVATE ${compiler_options})
-  target_compile_features(${i} PRIVATE ${cxx_std})
-endforeach()
+include(cmake/asio.cmake)
 
 set(preprocessor preprocessor)
 add_executable(${preprocessor})
